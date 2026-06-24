@@ -1,0 +1,47 @@
+name: Build iOS Mod Menu
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Setup Theos (Robust Way)
+      run: |
+        # دابەزاندنی Theos بە شێوازێکی تەواو و بێ هەڵە
+        git clone --recursive https://github.com/theos/theos.git $HOME/theos
+        # دانانی ڕێڕەوی فەرمی بۆ ئەوەی make هەموو فایلەکان ببینێت
+        echo "THEOS=$HOME/theos" >> $GITHUB_ENV
+        echo "$HOME/theos/bin" >> $GITHUB_PATH
+
+    - name: Install ldid (For Code Signing)
+      run: |
+        # دابەزاندنی ئامرازی ldid بۆ ئەوەی کێشەی واژۆکردن و command not found نەمێنێت
+        brew install ldid
+
+    - name: Download iOS SDK
+      run: |
+        # سڕینەوەی فۆڵدەرە خاڵییەکە ئەگەر پێشتر دروستبووبێت بۆ ڕێگری لە هەڵەی 128
+        rm -rf $HOME/theos/sdks
+        # دابەزاندنی SDK بە سەرکەوتوویی
+        git clone --depth=1 https://github.com/theos/sdks.git $HOME/theos/sdks
+
+    - name: Compile Tweak
+      run: |
+        # بەکارهێنانی ئەو رێڕەوەی کە ئێستا بە دروستی دیاریمان کرد
+        export THEOS=$HOME/theos
+        # ئەم فەرمانە دڵنیامان دەکاتەوە کە هەموو فایلەکان لە شوێنی خۆیانن
+        make FINALPACKAGE=1
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: iOS-Mod-Menu-Build
+        path: .theos/obj/**/*.dylib
