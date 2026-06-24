@@ -19,17 +19,16 @@ jobs:
       run: |
         brew install dpkg ldid
 
-    - name: Setup Theos Framework & Native iOS SDK
+    - name: Setup Theos Framework & Official SDKs
       run: |
+        # کڵۆنکردنی فەرمی فڕەیموۆرکی تیۆس
         git clone --recursive https://github.com/theos/theos.git $HOME/theos
-        mkdir -p $HOME/theos/sdks
         
-        # دۆزینەوەی ڕێڕەوی فەرمی SDK ی ئایفۆن لە ناو مەکۆس بەبێ داونلۆد
-        SDK_PATH=$(xcrun --sdk iphoneos --show-sdk-path)
-        echo "Found iOS SDK at: $SDK_PATH"
+        # سڕینەوەی فۆڵدەری کۆنی sdks ئەگەر هەبێت
+        rm -rf $HOME/theos/sdks
         
-        # بەستنەوەی ڕاستەوخۆی SDK ی ناو Xcode بۆ ناو فۆڵدەری ئەپڵیکەیشنەکە
-        ln -s "$SDK_PATH" $HOME/theos/sdks/iPhoneOS.sdk
+        # دابەزاندنی تەواوی وەشانی فەرمی SDK کانی ئایفۆن بە خێراترین شێوە (Shallow Clone)
+        git clone --depth 1 https://github.com/theos/sdks.git $HOME/theos/sdks
 
     - name: Compile Package
       run: |
