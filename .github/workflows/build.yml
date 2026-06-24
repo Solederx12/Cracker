@@ -19,19 +19,27 @@ jobs:
       run: |
         brew install dpkg ldid
 
-    - name: Setup Theos Framework
+    - name: Setup Theos Framework & Universal SDK Symlinks
       run: |
         git clone --recursive https://github.com/theos/theos.git $HOME/theos
+        mkdir -p $HOME/theos/sdks
+        
+        # دۆزینەوەی ڕێڕەوی ئەسڵی و فەرمی iOS SDK لەسەر مەکۆس
+        XCODE_SDK=$(xcrun --sdk iphoneos --show-sdk-path)
+        echo "Xcode SDK Path: $XCODE_SDK"
+        
+        # دروستکردنی فۆڵدەری ساختە بۆ هەموو وەشانەکان بۆ ئەوەی میکفایلەکەت کێشەی نەبێت
+        ln -s "$XCODE_SDK" $HOME/theos/sdks/iPhoneOS.sdk
+        for v in 11.0 12.0 13.0 14.0 14.5 15.0 15.5 16.0 16.5 17.0 17.5 18.0 19.0; do
+          ln -s "$XCODE_SDK" $HOME/theos/sdks/iPhoneOS$v.sdk
+        done
 
     - name: Compile Package
       run: |
         export THEOS=$HOME/theos
-        
-        # دۆزینەوەی ڕێڕەوی ئەسڵی iOS SDK لە ناو مەکۆس
-        SDK_PATH=$(xcrun --sdk iphoneos --show-sdk-path)
-        
-        # ناچارکردنی تویگەکە بۆ کۆمپایلکردن بۆ ئایفۆن بە بەکارهێنانی پاشکۆی فەرمی ئەپڵ
-        make package FINALPACKAGE=1 TARGET=iphoneos:clang:latest SYSROOT="$SDK_PATH"
+        make package FINALPACKAGE=1
+      env:
+        TARGET: iphoneos:clang:latest
 
     - name: Upload DEB Artifact
       uses: actions/upload-artifact@v4
