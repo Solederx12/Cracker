@@ -21,26 +21,40 @@ jobs:
 
     - name: Setup Theos Framework & Official SDKs
       run: |
-        # کڵۆنکردنی فەرمی فڕەیموۆرکی تیۆس
         git clone --recursive https://github.com/theos/theos.git $HOME/theos
-        
-        # سڕینەوەی فۆڵدەری کۆنی sdks ئەگەر هەبێت
         rm -rf $HOME/theos/sdks
-        
-        # دابەزاندنی تەواوی وەشانی فەرمی SDK کانی ئایفۆن بە خێراترین شێوە
         git clone --depth 1 https://github.com/theos/sdks.git $HOME/theos/sdks
 
-    - name: Auto-Fix Makefile Target
+    - name: Auto-Fix Makefile & Generate Missing Plist Filter
       run: |
-        # گۆڕینی iphoneos بۆ iphone لەناو فایلی میکفایل بە شێوازی ئۆتۆماتیکی بۆ بنبڕکردنی ئیرۆرەکە
+        # 1. ڕاستکردنەوەی ئۆتۆماتیکی ناوی پلاتفۆرم لە میکفایلدا
         if [ -f Makefile ]; then
           sed -i '' 's/iphoneos/iphone/g' Makefile 2>/dev/null || sed -i 's/iphoneos/iphone/g' Makefile 2>/dev/null
+        fi
+        
+        # 2. دروستکردنی فایلی Plist ئەگەر لە ناو پڕۆژەکەدا نەبوو بۆ تێپەڕاندنی ئیرۆرەکە
+        if [ ! -f Kurdish80p.plist ] && [ ! -f Filter.plist ]; then
+          echo "Generating missing Kurdish80p.plist file..."
+          cat << 'EOF' > Kurdish80p.plist
+    <?xml version="1.0" encoding="UTF-8"?>
+    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+    <plist version="1.0">
+    <dict>
+        <key>Filter</key>
+        <dict>
+            <key>Bundles</key>
+            <array>
+                <string>com.miniclip.8ballpool</string>
+            </array>
+        </dict>
+    </dict>
+    </plist>
+    EOF
         fi
 
     - name: Compile Package
       run: |
         export THEOS=$HOME/theos
-        # ناچارکردنی کۆمپایلەر بۆ بەکارهێنانی تێرمۆلۆژی دروستی تیۆس
         make package FINALPACKAGE=1 TARGET=iphone:clang:latest
 
     - name: Upload DEB Artifact
