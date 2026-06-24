@@ -1,0 +1,12 @@
+{
+  "record": {
+    "hack_name": "VIP_Kurdish_Mod",
+    "is_active": true,
+    "aim_line": "0x10302a8b4",
+    "aim_length": "0x10302aa4c",
+    "cue_trajectory": "0x10302aa58",
+    "anti_cheat": "0x10036a128",
+    "anti_ban": "0x10036a140",
+    "bypass_crash": "0x10045b210"
+  }
+}
