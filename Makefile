@@ -1,15 +1,11 @@
-export ARCHS = arm64 arm64e
-export TARGET = iphone:clang:14.5:14.0
+TARGET := iphoneos:clang:latest:14.0
+ARCHS := arm64 arm64e
 
 include $(THEOS)/makefiles/common.mk
 
-TWEAK_NAME = iOSModMenu
+TWEAK_NAME = Kurdish80p
 
-iOSModMenu_FILES = TWEAK.xm
-iOSModMenu_CFLAGS = -fobjc-arc
-# لێرەدا فریمۆرکەکانمان زیاد کرد بۆ ئەوەی بە وێنەکەدا بێن
-iOSModMenu_FRAMEWORKS = UIKit QuartzCore CoreGraphics Foundation SystemConfiguration
-# لێرەدا کتێبخانە پێویستەکانمان زیاد کرد
-iOSModMenu_LDFLAGS = -lsubstrate
+Kurdish80p_FILES = TWEAK.xm
+Kurdish80p_FRAMEWORKS = UIKit CoreGraphics QuartzCore
 
 include $(THEOS)/makefiles/tweak.mk
