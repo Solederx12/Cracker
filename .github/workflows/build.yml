@@ -19,27 +19,29 @@ jobs:
       run: |
         brew install dpkg ldid
 
-    - name: Setup Theos Framework & Universal SDK Symlinks
+    - name: Setup Theos Framework & Official SDKs
       run: |
+        # کڵۆنکردنی فەرمی فڕەیموۆرکی تیۆس
         git clone --recursive https://github.com/theos/theos.git $HOME/theos
-        mkdir -p $HOME/theos/sdks
         
-        # دۆزینەوەی ڕێڕەوی ئەسڵی و فەرمی iOS SDK لەسەر مەکۆس
-        XCODE_SDK=$(xcrun --sdk iphoneos --show-sdk-path)
-        echo "Xcode SDK Path: $XCODE_SDK"
+        # سڕینەوەی فۆڵدەری کۆنی sdks ئەگەر هەبێت
+        rm -rf $HOME/theos/sdks
         
-        # دروستکردنی فۆڵدەری ساختە بۆ هەموو وەشانەکان بۆ ئەوەی میکفایلەکەت کێشەی نەبێت
-        ln -s "$XCODE_SDK" $HOME/theos/sdks/iPhoneOS.sdk
-        for v in 11.0 12.0 13.0 14.0 14.5 15.0 15.5 16.0 16.5 17.0 17.5 18.0 19.0; do
-          ln -s "$XCODE_SDK" $HOME/theos/sdks/iPhoneOS$v.sdk
-        done
+        # دابەزاندنی تەواوی وەشانی فەرمی SDK کانی ئایفۆن بە خێراترین شێوە
+        git clone --depth 1 https://github.com/theos/sdks.git $HOME/theos/sdks
+
+    - name: Auto-Fix Makefile Target
+      run: |
+        # گۆڕینی iphoneos بۆ iphone لەناو فایلی میکفایل بە شێوازی ئۆتۆماتیکی بۆ بنبڕکردنی ئیرۆرەکە
+        if [ -f Makefile ]; then
+          sed -i '' 's/iphoneos/iphone/g' Makefile 2>/dev/null || sed -i 's/iphoneos/iphone/g' Makefile 2>/dev/null
+        fi
 
     - name: Compile Package
       run: |
         export THEOS=$HOME/theos
-        make package FINALPACKAGE=1
-      env:
-        TARGET: iphoneos:clang:latest
+        # ناچارکردنی کۆمپایلەر بۆ بەکارهێنانی تێرمۆلۆژی دروستی تیۆس
+        make package FINALPACKAGE=1 TARGET=iphone:clang:latest
 
     - name: Upload DEB Artifact
       uses: actions/upload-artifact@v4
