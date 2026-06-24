@@ -27,29 +27,16 @@ jobs:
 
     - name: Auto-Fix Makefile & Generate Missing Plist Filter
       run: |
-        # 1. ڕاستکردنەوەی ئۆتۆماتیکی ناوی پلاتفۆرم لە میکفایلدا
+        # 1. ڕاستکردنەوەی ناوی پلاتفۆرم بۆ ئەوەی ئیرۆری مەکۆس نەدات
         if [ -f Makefile ]; then
           sed -i '' 's/iphoneos/iphone/g' Makefile 2>/dev/null || sed -i 's/iphoneos/iphone/g' Makefile 2>/dev/null
         fi
         
-        # 2. دروستکردنی فایلی Plist ئەگەر لە ناو پڕۆژەکەدا نەبوو بۆ تێپەڕاندنی ئیرۆرەکە
+        # 2. دروستکردنی فایلی فلتەر بە سەلامەتترین شێوەی کۆدکردن کە گیتهەب تێک نەدات
         if [ ! -f Kurdish80p.plist ] && [ ! -f Filter.plist ]; then
-          echo "Generating missing Kurdish80p.plist file..."
-          cat << 'EOF' > Kurdish80p.plist
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-    <dict>
-        <key>Filter</key>
-        <dict>
-            <key>Bundles</key>
-            <array>
-                <string>com.miniclip.8ballpool</string>
-            </array>
-        </dict>
-    </dict>
-    </plist>
-    EOF
+          echo '<?xml version="1.0" encoding="UTF-8"?>' > Kurdish80p.plist
+          echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> Kurdish80p.plist
+          echo '<plist version="1.0"><dict><key>Filter</key><dict><key>Bundles</key><array><string>com.miniclip.8ballpool</string></array></dict></dict></plist>' >> Kurdish80p.plist
         fi
 
     - name: Compile Package
