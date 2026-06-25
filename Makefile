@@ -9,11 +9,10 @@ TWEAK_NAME = Kurdish80p
 Kurdish80p_FILES = TWEAK.xm
 Kurdish80p_FRAMEWORKS = UIKit CoreGraphics QuartzCore
 
-# ➕ زیادکردنی کتێبخانەی دۆبی بۆ ناو پڕۆژەکە
-Kurdish80p_LIBRARIES = dobby
-
-# 🛠️ ڕێکخستنی شوێنی گەڕان بۆ فایلەکانی Dobby لە ناو فۆڵدەرەکەدا
+# 🛠️ ڕێکخستنی سیفەتەکانی کۆمپایلەر
 Kurdish80p_CFLAGS = -fobjc-arc -I.
-Kurdish80p_LDFLAGS = -L.
+
+# 🎯 بەستنەوەی ڕاستەوخۆی فایلی دۆبی بە ناونیشانی سەرەکی پڕۆژەکە (PWD)
+Kurdish80p_LDFLAGS = $(PWD)/libdobby.a
 
 include $(THEOS)/makefiles/tweak.mk
