@@ -1,7 +1,11 @@
-#include "dobby.h" // زیادکردنی کتێبخانەی دۆبی لەجیاتی سوبسترەیت
 #include <mach-o/dyld.h>
 #import <UIKit/UIKit.h>
 #include <string.h>
+
+// ====================================================================
+// ➕ پێناسەکردنی ڕاستەوخۆی فۆنکشنی دۆبی (بۆ ئەوەی پێویستت بە فایلی dobby.h نەبێت)
+// ====================================================================
+extern "C" int DobbyHook(void *target_address, void *replace_call, void **origin_call);
 
 // ==========================================
 // 🎯 پێناسی ئۆفسێتەکان (Offsets & Base Addresses)
@@ -231,7 +235,7 @@ static UIButton *floatingButton = nil;
 + (void)toggleAimTime:(UIButton *)sender {
     infinityAimTimeEnabled = !infinityAimTimeEnabled;
     sender.backgroundColor = infinityAimTimeEnabled ? [UIColor greenColor] : [UIColor grayColor];
-    [sender setTitle:infinityAimTimeEnabled ? @"کاتی bێکۆتایی: ON" : @"کاتی bێکۆتایی: OFF" forState:UIControlStateNormal];
+    [sender setTitle:infinityAimTimeEnabled ? @"کاتی بێکۆتایی: ON" : @"کاتی بێکۆتایی: OFF" forState:UIControlStateNormal];
 }
 + (void)toggleRack:(UIButton *)sender {
     customRackEnabled = !customRackEnabled;
