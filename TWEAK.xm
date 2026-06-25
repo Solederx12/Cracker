@@ -3,7 +3,7 @@
 #include <string.h>
 
 // ====================================================================
-// 🛑 بێدەنگکردنی ئیرۆری وەشانە نوێیەکان (iOS 26 Deprecations Bypass)
+// 🛑 بێدەنگکردنی ئیرۆری وەشانە نوێیەکانی ئایۆئێس (iOS 26+ Deprecations Bypass)
 // ====================================================================
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
@@ -304,5 +304,5 @@ __attribute__((constructor)) static void initMod() {
     }];
 }
 
-// 🔙 گەڕاندنەوەی ڕێکخستنی کۆمپایلەر
+// 🔙 گەڕاندنەوەی ڕێکخستنی بنەڕەتی کۆمپایلەر
 #pragma clang diagnostic pop
