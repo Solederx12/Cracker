@@ -1,4 +1,4 @@
-#include <substrate.h>
+#include "dobby.h" // زیادکردنی کتێبخانەی دۆبی لەجیاتی سوبسترەیت
 #include <mach-o/dyld.h>
 #import <UIKit/UIKit.h>
 #include <string.h>
@@ -20,17 +20,6 @@
 #define OFFSET_GET_AIM_EVENT          0x1113d8UL
 #define OFFSET_SETUP_CUE_BALL_RACK    0x6274ecUL
 
-// -- ئۆفسێتەکانی زانیاری و خەت (String / Data Pointers) --
-// تێبینی: ئەم ئۆفسێتانە بۆ گۆڕینی به‌های ناوەکی بەکاردێن لە کاتی پاتچکردنی میمۆریدا
-#define OFFSET_STR_GUIDELINES         0x3de0150UL
-#define OFFSET_STR_OFFLINE_GUIDE      0x3d23a90UL
-#define OFFSET_STR_NO_GUIDE_BTN       0x3d34c30UL
-#define OFFSET_STR_CUE_BALL_TRAJ      0x3d23a10UL
-#define OFFSET_STR_HIT_CUSHION_8BALL  0x3d2a7d0UL
-#define OFFSET_STR_HIT_CUSHION_ALL    0x3d2a7b0UL
-#define OFFSET_STR_CUE_BALL           0x3d12990UL
-#define OFFSET_STR_PENALTY_TIME       0x3d27950UL
-
 // ==========================================
 // 🎛️ دۆخی دوگمەکان (Booleans)
 // ==========================================
@@ -42,7 +31,7 @@ static BOOL customAimPointEnabled   = NO;
 static BOOL customAimAngleEnabled   = NO;
 static BOOL infinityAimTimeEnabled  = NO;
 static BOOL customRackEnabled       = NO;
-static BOOL customAimEventEnabled   = NO; // دوگمەی نوێ
+static BOOL customAimEventEnabled   = NO; 
 
 // ==========================================
 // 🛠️ فەنکشنەکانی هۆک (Detours)
@@ -89,16 +78,16 @@ void* new_getAimPoint(void* instance, void* param1, void* param2, void* param3) 
 double (*old_getAimAngleTarget)(void* instance, void* param2);
 double new_getAimAngleTarget(void* instance, void* param2) {
     if (customAimAngleEnabled) {
-        return 0.0; // جێگیرکردنی گۆشە بۆ لێدانی ڕاستەوخۆ
+        return 0.0; 
     }
     return old_getAimAngleTarget(instance, param2);
 }
 
-// ٧- هۆکی کاتی نیشانەگرتن (زیادکردنی کات)
+// ٧- هۆکی کاتی نیشانەگرتن
 double (*old_getAimTimePerShot)(void* instance, void* param2);
 double new_getAimTimePerShot(void* instance, void* param2) {
     if (infinityAimTimeEnabled) {
-        return 9999.0; // پێدانی کاتی زۆر بۆ نیشانەگرتن
+        return 9999.0; 
     }
     return old_getAimTimePerShot(instance, param2);
 }
@@ -112,11 +101,11 @@ void new_setupCueBallRack(void* instance, void* param2) {
     old_setupCueBallRack(instance, param2);
 }
 
-// ٩- هۆکی کۆنترۆڵکردنی ڕووداوی لێدان (فەنکشنی نوێی زیادکراو)
+// ٩- هۆکی کۆنترۆڵکردنی ڕووداوی لێدان
 void* (*old_getAimEvent)(void* instance, void* param1, void* param2, int param3);
 void* new_getAimEvent(void* instance, void* param1, void* param2, int param3) {
     if (customAimEventEnabled) {
-        // لۆجیکی تایبەت بە ڕووداوی خەت و لێدان (Aim Event)
+        // لۆجیکی تایبەت بە ڕووداوی خەت و لێدان
     }
     return old_getAimEvent(instance, param1, param2, param3);
 }
@@ -143,7 +132,6 @@ static UIButton *floatingButton = nil;
             menuInstance.userInteractionEnabled = YES;
             menuInstance.hidden = NO;
             
-            // قەبارەی ڕووکاری سەرەکی
             mainMenuView = [[UIView alloc] initWithFrame:CGRectMake(60, 80, 250, 480)];
             mainMenuView.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.95];
             mainMenuView.layer.cornerRadius = 16;
@@ -158,13 +146,11 @@ static UIButton *floatingButton = nil;
             titleLabel.font = [UIFont boldSystemFontOfSize:18];
             [mainMenuView addSubview:titleLabel];
             
-            // سکڕۆڵ ڤیو قەبارەکەی گەورەتر کراوە بۆ جێگەبوونەوەی ٩ دوگمە
             buttonScrollView = [[UIScrollView alloc] initWithFrame:CGRectMake(5, 60, 240, 350)];
             buttonScrollView.contentSize = CGSizeMake(240, 470);
             buttonScrollView.showsVerticalScrollIndicator = YES;
             [mainMenuView addSubview:buttonScrollView];
             
-            // دروستکردنی دوگمەکان لە ڕێگەی فەنکشنی خێرا
             [self createButtonWithTitle:@"دەرکەوتنی خەت: OFF" tag:1 yPos:5 action:@selector(toggleAim:)];
             [self createButtonWithTitle:@"کونی ساحەکان: OFF" tag:2 yPos:55 action:@selector(togglePockets:)];
             [self createButtonWithTitle:@"ئەوتۆ پلەی: OFF" tag:3 yPos:105 action:@selector(toggleAutoplay:)];
@@ -173,7 +159,7 @@ static UIButton *floatingButton = nil;
             [self createButtonWithTitle:@"گۆشەی ئامانج: OFF" tag:6 yPos:255 action:@selector(toggleAimAngle:)];
             [self createButtonWithTitle:@"کاتی بێکۆتایی: OFF" tag:7 yPos:305 action:@selector(toggleAimTime:)];
             [self createButtonWithTitle:@"ڕێکخستنی تۆپ: OFF" tag:8 yPos:355 action:@selector(toggleRack:)];
-            [self createButtonWithTitle:@"کۆنترۆڵی لێدان: OFF" tag:9 yPos:405 action:@selector(toggleAimEvent:)]; // دوگمەی نوێ
+            [self createButtonWithTitle:@"کۆنترۆڵی لێدان: OFF" tag:9 yPos:405 action:@selector(toggleAimEvent:)]; 
             
             UIButton *closeBtn = [UIButton buttonWithType:UIButtonTypeSystem];
             closeBtn.frame = CGRectMake(20, 420, 210, 40);
@@ -212,9 +198,6 @@ static UIButton *floatingButton = nil;
     [buttonScrollView addSubview:btn];
 }
 
-// ==========================================
-// 🔘 لۆجیکی گۆڕینی ڕەنگ و دۆخی دوگمەکان
-// ==========================================
 + (void)toggleAim:(UIButton *)sender {
     aimLineEnabled = !aimLineEnabled;
     sender.backgroundColor = aimLineEnabled ? [UIColor greenColor] : [UIColor grayColor];
@@ -248,7 +231,7 @@ static UIButton *floatingButton = nil;
 + (void)toggleAimTime:(UIButton *)sender {
     infinityAimTimeEnabled = !infinityAimTimeEnabled;
     sender.backgroundColor = infinityAimTimeEnabled ? [UIColor greenColor] : [UIColor grayColor];
-    [sender setTitle:infinityAimTimeEnabled ? @"کاتی بێکۆتایی: ON" : @"کاتی بێکۆتایی: OFF" forState:UIControlStateNormal];
+    [sender setTitle:infinityAimTimeEnabled ? @"کاتی bێکۆتایی: ON" : @"کاتی bێکۆتایی: OFF" forState:UIControlStateNormal];
 }
 + (void)toggleRack:(UIButton *)sender {
     customRackEnabled = !customRackEnabled;
@@ -282,7 +265,7 @@ static UIButton *floatingButton = nil;
 @end
 
 // ==========================================
-// 🚀 لۆدبوونی ئۆتۆماتیکی و جێگیرکردنی هوکەکان
+// 🚀 لۆدبوونی ئۆتۆماتیکی و جێگیرکردنی هوکەکان بە Dobby
 // ==========================================
 __attribute__((constructor)) static void initMod() {
     [[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationDidFinishLaunchingNotification
@@ -291,20 +274,22 @@ __attribute__((constructor)) static void initMod() {
                                                   usingBlock:^(NSNotification * _Nonnull note) {
         
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(3.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+            
+            // وەرگرتنی ناونیشانی سەرەکی یارییەکە لە مێمۆریدا
             uintptr_t baseAddress = (uintptr_t)_dyld_get_image_header(0); 
+            
             if (baseAddress) {
-                // هۆکە کۆنەکان
-                MSHookFunction((void *)(baseAddress + OFFSET_AIM_LINE), (void *)new_isAimCorrect, (void **)&old_isAimCorrect);
-                MSHookFunction((void *)(baseAddress + OFFSET_POCKETS), (void *)new_getPocketAimPoints, (void **)&old_getPocketAimPoints);
-                MSHookFunction((void *)(baseAddress + OFFSET_AUTOPLAY), (void *)new_isAutoplayEnabled, (void **)&old_isAutoplayEnabled);
-                MSHookFunction((void *)(baseAddress + OFFSET_TABLES), (void *)new_tablesBypass, (void **)&old_tablesBypass);
+                // جێگیرکردنی هۆکەکان بە بەکارهێنانی DobbyHook لەجیاتی MSHookFunction
+                DobbyHook((void *)(baseAddress + OFFSET_AIM_LINE), (void *)new_isAimCorrect, (void **)&old_isAimCorrect);
+                DobbyHook((void *)(baseAddress + OFFSET_POCKETS), (void *)new_getPocketAimPoints, (void **)&old_getPocketAimPoints);
+                DobbyHook((void *)(baseAddress + OFFSET_AUTOPLAY), (void *)new_isAutoplayEnabled, (void **)&old_isAutoplayEnabled);
+                DobbyHook((void *)(baseAddress + OFFSET_TABLES), (void *)new_tablesBypass, (void **)&old_tablesBypass);
                 
-                // هۆکە نوێیە دەرکراوەکانی فایلی تێکست
-                MSHookFunction((void *)(baseAddress + OFFSET_GET_AIM_POINT), (void *)new_getAimPoint, (void **)&old_getAimPoint);
-                MSHookFunction((void *)(baseAddress + OFFSET_GET_AIM_ANGLE), (void *)new_getAimAngleTarget, (void **)&old_getAimAngleTarget);
-                MSHookFunction((void *)(baseAddress + OFFSET_GET_AIM_TIME), (void *)new_getAimTimePerShot, (void **)&old_getAimTimePerShot);
-                MSHookFunction((void *)(baseAddress + OFFSET_SETUP_CUE_BALL_RACK), (void *)new_setupCueBallRack, (void **)&old_setupCueBallRack);
-                MSHookFunction((void *)(baseAddress + OFFSET_GET_AIM_EVENT), (void *)new_getAimEvent, (void **)&old_getAimEvent);
+                DobbyHook((void *)(baseAddress + OFFSET_GET_AIM_POINT), (void *)new_getAimPoint, (void **)&old_getAimPoint);
+                DobbyHook((void *)(baseAddress + OFFSET_GET_AIM_ANGLE), (void *)new_getAimAngleTarget, (void **)&old_getAimAngleTarget);
+                DobbyHook((void *)(baseAddress + OFFSET_GET_AIM_TIME), (void *)new_getAimTimePerShot, (void **)&old_getAimTimePerShot);
+                DobbyHook((void *)(baseAddress + OFFSET_SETUP_CUE_BALL_RACK), (void *)new_setupCueBallRack, (void **)&old_setupCueBallRack);
+                DobbyHook((void *)(baseAddress + OFFSET_GET_AIM_EVENT), (void *)new_getAimEvent, (void **)&old_getAimEvent);
             }
             [ModMenuWindow showMenu];
         });
