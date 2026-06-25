@@ -3,6 +3,12 @@
 #include <string.h>
 
 // ====================================================================
+// 🛑 بێدەنگکردنی ئیرۆری وەشانە نوێیەکان (iOS 26 Deprecations Bypass)
+// ====================================================================
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+
+// ====================================================================
 // ➕ پێناسەکردنی ڕاستەوخۆی فۆنکشنی دۆبی (بۆ ئەوەی پێویستت بە فایلی dobby.h نەبێت)
 // ====================================================================
 extern "C" int DobbyHook(void *target_address, void *replace_call, void **origin_call);
@@ -279,11 +285,9 @@ __attribute__((constructor)) static void initMod() {
         
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(3.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
             
-            // وەرگرتنی ناونیشانی سەرەکی یارییەکە لە مێمۆریدا
             uintptr_t baseAddress = (uintptr_t)_dyld_get_image_header(0); 
             
             if (baseAddress) {
-                // جێگیرکردنی هۆکەکان بە بەکارهێنانی DobbyHook لەجیاتی MSHookFunction
                 DobbyHook((void *)(baseAddress + OFFSET_AIM_LINE), (void *)new_isAimCorrect, (void **)&old_isAimCorrect);
                 DobbyHook((void *)(baseAddress + OFFSET_POCKETS), (void *)new_getPocketAimPoints, (void **)&old_getPocketAimPoints);
                 DobbyHook((void *)(baseAddress + OFFSET_AUTOPLAY), (void *)new_isAutoplayEnabled, (void **)&old_isAutoplayEnabled);
@@ -299,3 +303,6 @@ __attribute__((constructor)) static void initMod() {
         });
     }];
 }
+
+// 🔙 گەڕاندنەوەی ڕێکخستنی کۆمپایلەر
+#pragma clang diagnostic pop
