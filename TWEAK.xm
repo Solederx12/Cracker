@@ -3,7 +3,7 @@
 #include <string.h>
 
 // ====================================================================
-// 🛑 بێدەنگکردنی ئیرۆری وەشانە نوێیەکانی ئایۆئێس
+// 🛑 بێدەنگکردنی ئیرۆری وەشانە نوێیەکانی ئایۆئێس (iOS 26+ Deprecations Bypass)
 // ====================================================================
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
@@ -14,7 +14,7 @@
 extern "C" int DobbyHook(void *target_address, void *replace_call, void **origin_call);
 
 // ==========================================
-// 🎯 پێناسی ئۆفسێتەکان
+// 🎯 پێناسی ئۆفسێتەکان (Offsets & Base Addresses)
 // ==========================================
 #define OFFSET_AIM_LINE               0x2c138UL   
 #define OFFSET_POCKETS                0xec9ccUL   
@@ -106,7 +106,6 @@ void* new_getAimEvent(void* instance, void* param1, void* param2, int param3) {
     return old_getAimEvent(instance, param1, param2, param3);
 }
 
-// ⬇️ ئەمانە ئەو فەنکشنانەن کە لەبیرکرابوون و ئیرۆرەکەیان دروستکردبوو ⬇️
 bool (*old_generalPatch1)(void* instance);
 bool new_generalPatch1(void* instance) {
     if (generalPatchEnabled) return true;
@@ -136,13 +135,29 @@ bool new_antiBan(void* instance) {
     if (antiBanEnabled) return true;
     return old_antiBan(instance);
 }
-// ⬆️ کۆتایی فەنکشنە تازەکان ⬆️
 
-// ==========================================
-// 🎯 ڕووکاری بەکارهێنەر (Mod Menu)
-// ==========================================
+// ====================================================================
+// 🎯 ڕووکاری بەکارهێنەر - پێناسی تەواوی مێتۆدەکان (Mod Menu Interface)
+// ====================================================================
 @interface ModMenuWindow : UIWindow
 + (void)showMenu;
++ (void)createButtonWithTitle:(NSString *)title tag:(NSInteger)tag yPos:(CGFloat)y action:(SEL)action;
++ (void)toggleAim:(UIButton *)sender;
++ (void)togglePockets:(UIButton *)sender;
++ (void)toggleAutoplay:(UIButton *)sender;
++ (void)toggleTables:(UIButton *)sender;
++ (void)toggleAimPoint:(UIButton *)sender;
++ (void)toggleAimAngle:(UIButton *)sender;
++ (void)toggleAimTime:(UIButton *)sender;
++ (void)toggleRack:(UIButton *)sender;
++ (void)toggleAimEvent:(UIButton *)sender;
++ (void)toggleAntiBan:(UIButton *)sender;
++ (void)toggleWideLine:(UIButton *)sender;
++ (void)toggleForceGuide:(UIButton *)sender;
++ (void)toggleGeneralPatch:(UIButton *)sender;
++ (void)hideMenu;
++ (void)showFromFloating;
++ (void)dragButton:(UIPanGestureRecognizer *)gesture;
 @end
 
 @implementation ModMenuWindow
