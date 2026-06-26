@@ -9,7 +9,7 @@
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
 
 // ====================================================================
-// ➕ پێناسەکردنی ڕاستەوخۆی فۆنکشنی دۆبی (بۆ ئەوەی پێویستت بە فایلی dobby.h نەبێت)
+// ➕ پێناسەکردنی ڕاستەوخۆی فۆنکشنی دۆبی
 // ====================================================================
 extern "C" int DobbyHook(void *target_address, void *replace_call, void **origin_call);
 
@@ -17,18 +17,23 @@ extern "C" int DobbyHook(void *target_address, void *replace_call, void **origin
 // 🎯 پێناسی ئۆفسێتەکان (Offsets & Base Addresses)
 // ==========================================
 
-// -- ئۆفسێتە کۆنەکان --
+// -- ئۆفسێتە کۆنەکان و دەرکراوەکانی پێشوو --
 #define OFFSET_AIM_LINE               0x2c138UL   
 #define OFFSET_POCKETS                0xec9ccUL   
 #define OFFSET_AUTOPLAY               0x1318ff4UL 
 #define OFFSET_TABLES                 0x118568UL  
-
-// -- ئۆفسێتە نوێیەکانی فەنکشن (Executable Hooks) --
 #define OFFSET_GET_AIM_POINT          0x8e35f8UL
 #define OFFSET_GET_AIM_ANGLE          0x1da9b0UL
 #define OFFSET_GET_AIM_TIME           0xbb0dd0UL
 #define OFFSET_GET_AIM_EVENT          0x1113d8UL
 #define OFFSET_SETUP_CUE_BALL_RACK    0x6274ecUL
+
+// -- 🚀 ئۆفسێتە تازەکانی ناو فایلی تێکستەکە (قیاسکراون) --
+#define OFFSET_GENERAL_PATCH_1        0x2a3da8UL  // گەڕاندنەوەی True
+#define OFFSET_GENERAL_PATCH_2        0x2a3ee4UL  // گەڕاندنەوەی True
+#define OFFSET_FORCE_SHOW_GUIDELINE   0x11b488UL  // پووچەڵکردنەوەی شاردنەوەی هێڵ
+#define OFFSET_WIDE_LINE              0x30c2fc0UL // ناچارکردنی مۆدی هێڵی پان
+#define OFFSET_ANTI_BAN               0x2fdcaa0UL // پەکخستنی ناردنی ڕاپۆرت (Anti-Ban)
 
 // ==========================================
 // 🎛️ دۆخی دوگمەکان (Booleans)
@@ -42,83 +47,102 @@ static BOOL customAimAngleEnabled   = NO;
 static BOOL infinityAimTimeEnabled  = NO;
 static BOOL customRackEnabled       = NO;
 static BOOL customAimEventEnabled   = NO; 
+// دۆخی دوگمە تازەکان:
+static BOOL generalPatchEnabled     = NO;
+static BOOL forceShowGuideEnabled   = NO;
+static BOOL wideLineEnabled         = NO;
+static BOOL antiBanEnabled          = NO;
 
 // ==========================================
 // 🛠️ فەنکشنەکانی هۆک (Detours)
 // ==========================================
 
-// ١- هۆکی دەرکەوتنی خەت
+// کۆنەکان...
 bool (*old_isAimCorrect)(void* instance);
 bool new_isAimCorrect(void* instance) {
     if (aimLineEnabled) return true; 
     return old_isAimCorrect(instance);
 }
 
-// ٢- هۆکی کونی ساحەکان
 bool (*old_getPocketAimPoints)(void* instance);
 bool new_getPocketAimPoints(void* instance) {
     if (pocketsEnabled) return true;
     return old_getPocketAimPoints(instance);
 }
 
-// ٣- هۆکی ئەوتۆ پلەی
 bool (*old_isAutoplayEnabled)(void* instance);
 bool new_isAutoplayEnabled(void* instance) {
     if (autoplayEnabled) return true;
     return old_isAutoplayEnabled(instance);
 }
 
-// ٤- هۆکی گۆڕینی ساحەکان
 bool (*old_tablesBypass)(void* instance);
 bool new_tablesBypass(void* instance) {
     if (tablesEnabled) return true;
     return old_tablesBypass(instance);
 }
 
-// ٥- هۆکی خاڵی نیشانەگرتنی سەر مێز
 void* (*old_getAimPoint)(void* instance, void* param1, void* param2, void* param3);
 void* new_getAimPoint(void* instance, void* param1, void* param2, void* param3) {
-    if (customAimPointEnabled) {
-        // لۆجیکی دەستکاری خاڵی لێدان
-    }
+    if (customAimPointEnabled) {}
     return old_getAimPoint(instance, param1, param2, param3);
 }
 
-// ٦- هۆکی گۆشەی نیشانەگرتن
 double (*old_getAimAngleTarget)(void* instance, void* param2);
 double new_getAimAngleTarget(void* instance, void* param2) {
-    if (customAimAngleEnabled) {
-        return 0.0; 
-    }
+    if (customAimAngleEnabled) return 0.0; 
     return old_getAimAngleTarget(instance, param2);
 }
 
-// ٧- هۆکی کاتی نیشانەگرتن
 double (*old_getAimTimePerShot)(void* instance, void* param2);
 double new_getAimTimePerShot(void* instance, void* param2) {
-    if (infinityAimTimeEnabled) {
-        return 9999.0; 
-    }
+    if (infinityAimTimeEnabled) return 9999.0; 
     return old_getAimTimePerShot(instance, param2);
 }
 
-// ٨- هۆکی ڕێکخستنی تۆپەکان لەسەر مێز
 void (*old_setupCueBallRack)(void* instance, void* param2);
 void new_setupCueBallRack(void* instance, void* param2) {
-    if (customRackEnabled) {
-        // کۆنترۆڵکردنی ڕێکی تۆپەکان
-    }
+    if (customRackEnabled) {}
     old_setupCueBallRack(instance, param2);
 }
 
-// ٩- هۆکی کۆنترۆڵکردنی ڕووداوی لێدان
 void* (*old_getAimEvent)(void* instance, void* param1, void* param2, int param3);
 void* new_getAimEvent(void* instance, void* param1, void* param2, int param3) {
-    if (customAimEventEnabled) {
-        // لۆجیکی تایبەت بە ڕووداوی خەت و لێدان
-    }
+    if (customAimEventEnabled) {}
     return old_getAimEvent(instance, param1, param2, param3);
 }
+
+// 🚀 هۆکە تازەکانی فایلی تێکستەکە کە True دەگەڕێننەوە:
+bool (*old_generalPatch1)(void* instance);
+bool new_generalPatch1(void* instance) {
+    if (generalPatchEnabled) return true;
+    return old_generalPatch1(instance);
+}
+
+bool (*old_generalPatch2)(void* instance);
+bool new_generalPatch2(void* instance) {
+    if (generalPatchEnabled) return true;
+    return old_generalPatch2(instance);
+}
+
+bool (*old_forceShowGuideline)(void* instance);
+bool new_forceShowGuideline(void* instance) {
+    if (forceShowGuideEnabled) return true;
+    return old_forceShowGuideline(instance);
+}
+
+bool (*old_wideLine)(void* instance);
+bool new_wideLine(void* instance) {
+    if (wideLineEnabled) return true;
+    return old_wideLine(instance);
+}
+
+bool (*old_antiBan)(void* instance);
+bool new_antiBan(void* instance) {
+    if (antiBanEnabled) return true; // ڕێگری لە ناردنی ڕاپۆرت
+    return old_antiBan(instance);
+}
+
 
 // ==========================================
 // 🎯 ڕووکاری بەکارهێنەر (Mod Menu)
@@ -150,14 +174,15 @@ static UIButton *floatingButton = nil;
             [menuInstance addSubview:mainMenuView];
             
             UILabel *titleLabel = [[UILabel alloc] initWithFrame:CGRectMake(10, 15, 230, 35)];
-            titleLabel.text = @"🎱 80p Kurdish Menu V3";
+            titleLabel.text = @"🎱 80p Kurdish Menu V4";
             titleLabel.textColor = [UIColor whiteColor];
             titleLabel.textAlignment = NSTextAlignmentCenter;
             titleLabel.font = [UIFont boldSystemFontOfSize:18];
             [mainMenuView addSubview:titleLabel];
             
+            // سکڕۆڵ ڤیو قەبارەکەی گەورەتر کراوە بۆ جێگەبوونەوەی ١٣ دوگمە
             buttonScrollView = [[UIScrollView alloc] initWithFrame:CGRectMake(5, 60, 240, 350)];
-            buttonScrollView.contentSize = CGSizeMake(240, 470);
+            buttonScrollView.contentSize = CGSizeMake(240, 670); // گەورەکرایەوە
             buttonScrollView.showsVerticalScrollIndicator = YES;
             [mainMenuView addSubview:buttonScrollView];
             
@@ -170,6 +195,12 @@ static UIButton *floatingButton = nil;
             [self createButtonWithTitle:@"کاتی بێکۆتایی: OFF" tag:7 yPos:305 action:@selector(toggleAimTime:)];
             [self createButtonWithTitle:@"ڕێکخستنی تۆپ: OFF" tag:8 yPos:355 action:@selector(toggleRack:)];
             [self createButtonWithTitle:@"کۆنترۆڵی لێدان: OFF" tag:9 yPos:405 action:@selector(toggleAimEvent:)]; 
+            
+            // دوگمە تازەکان
+            [self createButtonWithTitle:@"ئەنتی بان (Anti-Ban): OFF" tag:10 yPos:455 action:@selector(toggleAntiBan:)]; 
+            [self createButtonWithTitle:@"هێڵی پان (Wide Line): OFF" tag:11 yPos:505 action:@selector(toggleWideLine:)]; 
+            [self createButtonWithTitle:@"دەرخستنی زۆرەملێ: OFF" tag:12 yPos:555 action:@selector(toggleForceGuide:)]; 
+            [self createButtonWithTitle:@"پاتچی گشتی: OFF" tag:13 yPos:605 action:@selector(toggleGeneralPatch:)]; 
             
             UIButton *closeBtn = [UIButton buttonWithType:UIButtonTypeSystem];
             closeBtn.frame = CGRectMake(20, 420, 210, 40);
@@ -208,51 +239,22 @@ static UIButton *floatingButton = nil;
     [buttonScrollView addSubview:btn];
 }
 
-+ (void)toggleAim:(UIButton *)sender {
-    aimLineEnabled = !aimLineEnabled;
-    sender.backgroundColor = aimLineEnabled ? [UIColor greenColor] : [UIColor grayColor];
-    [sender setTitle:aimLineEnabled ? @"دەرکەوتنی خەت: ON" : @"دەرکەوتنی خەت: OFF" forState:UIControlStateNormal];
-}
-+ (void)togglePockets:(UIButton *)sender {
-    pocketsEnabled = !pocketsEnabled;
-    sender.backgroundColor = pocketsEnabled ? [UIColor greenColor] : [UIColor grayColor];
-    [sender setTitle:pocketsEnabled ? @"کونی ساحەکان: ON" : @"کونی ساحەکان: OFF" forState:UIControlStateNormal];
-}
-+ (void)toggleAutoplay:(UIButton *)sender {
-    autoplayEnabled = !autoplayEnabled;
-    sender.backgroundColor = autoplayEnabled ? [UIColor greenColor] : [UIColor grayColor];
-    [sender setTitle:autoplayEnabled ? @"ئەوتۆ پلەی: ON" : @"ئەوتۆ پلەی: OFF" forState:UIControlStateNormal];
-}
-+ (void)toggleTables:(UIButton *)sender {
-    tablesEnabled = !tablesEnabled;
-    sender.backgroundColor = tablesEnabled ? [UIColor greenColor] : [UIColor grayColor];
-    [sender setTitle:tablesEnabled ? @"ساحەکان: ON" : @"ساحەکان: OFF" forState:UIControlStateNormal];
-}
-+ (void)toggleAimPoint:(UIButton *)sender {
-    customAimPointEnabled = !customAimPointEnabled;
-    sender.backgroundColor = customAimPointEnabled ? [UIColor greenColor] : [UIColor grayColor];
-    [sender setTitle:customAimPointEnabled ? @"ڕێڕەوی نیشانە: ON" : @"ڕێڕەوی نیشانە: OFF" forState:UIControlStateNormal];
-}
-+ (void)toggleAimAngle:(UIButton *)sender {
-    customAimAngleEnabled = !customAimAngleEnabled;
-    sender.backgroundColor = customAimAngleEnabled ? [UIColor greenColor] : [UIColor grayColor];
-    [sender setTitle:customAimAngleEnabled ? @"گۆشەی ئامانج: ON" : @"گۆشەی ئامانج: OFF" forState:UIControlStateNormal];
-}
-+ (void)toggleAimTime:(UIButton *)sender {
-    infinityAimTimeEnabled = !infinityAimTimeEnabled;
-    sender.backgroundColor = infinityAimTimeEnabled ? [UIColor greenColor] : [UIColor grayColor];
-    [sender setTitle:infinityAimTimeEnabled ? @"کاتی بێکۆتایی: ON" : @"کاتی بێکۆتایی: OFF" forState:UIControlStateNormal];
-}
-+ (void)toggleRack:(UIButton *)sender {
-    customRackEnabled = !customRackEnabled;
-    sender.backgroundColor = customRackEnabled ? [UIColor greenColor] : [UIColor grayColor];
-    [sender setTitle:customRackEnabled ? @"ڕێکخستنی تۆپ: ON" : @"ڕێکخستنی تۆپ: OFF" forState:UIControlStateNormal];
-}
-+ (void)toggleAimEvent:(UIButton *)sender {
-    customAimEventEnabled = !customAimEventEnabled;
-    sender.backgroundColor = customAimEventEnabled ? [UIColor greenColor] : [UIColor grayColor];
-    [sender setTitle:customAimEventEnabled ? @"کۆنترۆڵی لێدان: ON" : @"کۆنترۆڵی لێدان: OFF" forState:UIControlStateNormal];
-}
+// لۆجیکی دوگمە کۆنەکان
++ (void)toggleAim:(UIButton *)sender { aimLineEnabled = !aimLineEnabled; sender.backgroundColor = aimLineEnabled ? [UIColor greenColor] : [UIColor grayColor]; [sender setTitle:aimLineEnabled ? @"دەرکەوتنی خەت: ON" : @"دەرکەوتنی خەت: OFF" forState:UIControlStateNormal]; }
++ (void)togglePockets:(UIButton *)sender { pocketsEnabled = !pocketsEnabled; sender.backgroundColor = pocketsEnabled ? [UIColor greenColor] : [UIColor grayColor]; [sender setTitle:pocketsEnabled ? @"کونی ساحەکان: ON" : @"کونی ساحەکان: OFF" forState:UIControlStateNormal]; }
++ (void)toggleAutoplay:(UIButton *)sender { autoplayEnabled = !autoplayEnabled; sender.backgroundColor = autoplayEnabled ? [UIColor greenColor] : [UIColor grayColor]; [sender setTitle:autoplayEnabled ? @"ئەوتۆ پلەی: ON" : @"ئەوتۆ پلەی: OFF" forState:UIControlStateNormal]; }
++ (void)toggleTables:(UIButton *)sender { tablesEnabled = !tablesEnabled; sender.backgroundColor = tablesEnabled ? [UIColor greenColor] : [UIColor grayColor]; [sender setTitle:tablesEnabled ? @"ساحەکان: ON" : @"ساحەکان: OFF" forState:UIControlStateNormal]; }
++ (void)toggleAimPoint:(UIButton *)sender { customAimPointEnabled = !customAimPointEnabled; sender.backgroundColor = customAimPointEnabled ? [UIColor greenColor] : [UIColor grayColor]; [sender setTitle:customAimPointEnabled ? @"ڕێڕەوی نیشانە: ON" : @"ڕێڕەوی نیشانە: OFF" forState:UIControlStateNormal]; }
++ (void)toggleAimAngle:(UIButton *)sender { customAimAngleEnabled = !customAimAngleEnabled; sender.backgroundColor = customAimAngleEnabled ? [UIColor greenColor] : [UIColor grayColor]; [sender setTitle:customAimAngleEnabled ? @"گۆشەی ئامانج: ON" : @"گۆشەی ئامانج: OFF" forState:UIControlStateNormal]; }
++ (void)toggleAimTime:(UIButton *)sender { infinityAimTimeEnabled = !infinityAimTimeEnabled; sender.backgroundColor = infinityAimTimeEnabled ? [UIColor greenColor] : [UIColor grayColor]; [sender setTitle:infinityAimTimeEnabled ? @"کاتی بێکۆتایی: ON" : @"کاتی بێکۆتایی: OFF" forState:UIControlStateNormal]; }
++ (void)toggleRack:(UIButton *)sender { customRackEnabled = !customRackEnabled; sender.backgroundColor = customRackEnabled ? [UIColor greenColor] : [UIColor grayColor]; [sender setTitle:customRackEnabled ? @"ڕێکخستنی تۆپ: ON" : @"ڕێکخستنی تۆپ: OFF" forState:UIControlStateNormal]; }
++ (void)toggleAimEvent:(UIButton *)sender { customAimEventEnabled = !customAimEventEnabled; sender.backgroundColor = customAimEventEnabled ? [UIColor greenColor] : [UIColor grayColor]; [sender setTitle:customAimEventEnabled ? @"کۆنترۆڵی لێدان: ON" : @"کۆنترۆڵی لێدان: OFF" forState:UIControlStateNormal]; }
+
+// لۆجیکی دوگمە تازەکان
++ (void)toggleAntiBan:(UIButton *)sender { antiBanEnabled = !antiBanEnabled; sender.backgroundColor = antiBanEnabled ? [UIColor greenColor] : [UIColor grayColor]; [sender setTitle:antiBanEnabled ? @"ئەنتی بان (Anti-Ban): ON" : @"ئەنتی بان (Anti-Ban): OFF" forState:UIControlStateNormal]; }
++ (void)toggleWideLine:(UIButton *)sender { wideLineEnabled = !wideLineEnabled; sender.backgroundColor = wideLineEnabled ? [UIColor greenColor] : [UIColor grayColor]; [sender setTitle:wideLineEnabled ? @"هێڵی پان (Wide Line): ON" : @"هێڵی پان (Wide Line): OFF" forState:UIControlStateNormal]; }
++ (void)toggleForceGuide:(UIButton *)sender { forceShowGuideEnabled = !forceShowGuideEnabled; sender.backgroundColor = forceShowGuideEnabled ? [UIColor greenColor] : [UIColor grayColor]; [sender setTitle:forceShowGuideEnabled ? @"دەرخستنی زۆرەملێ: ON" : @"دەرخستنی زۆرەملێ: OFF" forState:UIControlStateNormal]; }
++ (void)toggleGeneralPatch:(UIButton *)sender { generalPatchEnabled = !generalPatchEnabled; sender.backgroundColor = generalPatchEnabled ? [UIColor greenColor] : [UIColor grayColor]; [sender setTitle:generalPatchEnabled ? @"پاتچی گشتی: ON" : @"پاتچی گشتی: OFF" forState:UIControlStateNormal]; }
 
 + (void)hideMenu {
     if (mainMenuView) mainMenuView.hidden = YES;
@@ -275,7 +277,7 @@ static UIButton *floatingButton = nil;
 @end
 
 // ==========================================
-// 🚀 لۆدبوونی ئۆتۆماتیکی و جێگیرکردنی هوکەکان بە Dobby
+// 🚀 لۆدبوونی ئۆتۆماتیکی و جێگیرکردنی تەواوی هوکەکان بە Dobby
 // ==========================================
 __attribute__((constructor)) static void initMod() {
     [[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationDidFinishLaunchingNotification
@@ -288,16 +290,23 @@ __attribute__((constructor)) static void initMod() {
             uintptr_t baseAddress = (uintptr_t)_dyld_get_image_header(0); 
             
             if (baseAddress) {
+                // کۆنەکان
                 DobbyHook((void *)(baseAddress + OFFSET_AIM_LINE), (void *)new_isAimCorrect, (void **)&old_isAimCorrect);
                 DobbyHook((void *)(baseAddress + OFFSET_POCKETS), (void *)new_getPocketAimPoints, (void **)&old_getPocketAimPoints);
                 DobbyHook((void *)(baseAddress + OFFSET_AUTOPLAY), (void *)new_isAutoplayEnabled, (void **)&old_isAutoplayEnabled);
                 DobbyHook((void *)(baseAddress + OFFSET_TABLES), (void *)new_tablesBypass, (void **)&old_tablesBypass);
-                
                 DobbyHook((void *)(baseAddress + OFFSET_GET_AIM_POINT), (void *)new_getAimPoint, (void **)&old_getAimPoint);
                 DobbyHook((void *)(baseAddress + OFFSET_GET_AIM_ANGLE), (void *)new_getAimAngleTarget, (void **)&old_getAimAngleTarget);
                 DobbyHook((void *)(baseAddress + OFFSET_GET_AIM_TIME), (void *)new_getAimTimePerShot, (void **)&old_getAimTimePerShot);
                 DobbyHook((void *)(baseAddress + OFFSET_SETUP_CUE_BALL_RACK), (void *)new_setupCueBallRack, (void **)&old_setupCueBallRack);
                 DobbyHook((void *)(baseAddress + OFFSET_GET_AIM_EVENT), (void *)new_getAimEvent, (void **)&old_getAimEvent);
+
+                // 🚀 تازەکان (Dobby Hooks)
+                DobbyHook((void *)(baseAddress + OFFSET_GENERAL_PATCH_1), (void *)new_generalPatch1, (void **)&old_generalPatch1);
+                DobbyHook((void *)(baseAddress + OFFSET_GENERAL_PATCH_2), (void *)new_generalPatch2, (void **)&old_generalPatch2);
+                DobbyHook((void *)(baseAddress + OFFSET_FORCE_SHOW_GUIDELINE), (void *)new_forceShowGuideline, (void **)&old_forceShowGuideline);
+                DobbyHook((void *)(baseAddress + OFFSET_WIDE_LINE), (void *)new_wideLine, (void **)&old_wideLine);
+                DobbyHook((void *)(baseAddress + OFFSET_ANTI_BAN), (void *)new_antiBan, (void **)&old_antiBan);
             }
             [ModMenuWindow showMenu];
         });
