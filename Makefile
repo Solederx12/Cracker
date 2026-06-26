@@ -1,19 +1,13 @@
-ARCHS = arm64 arm64e
-DEBUG = 0
-FINALPACKAGE = 1
-FOR_RELEASE = 1
-
 TARGET := iphone:clang:latest:14.0
+ARCHS = arm64
 
 include $(THEOS)/makefiles/common.mk
 
 TWEAK_NAME = CyberEliteCore
 
-# خوێندنەوەی سەرجەم فایلەکانی تویکەکە و مێنوو بەبێ کێشە
-CyberEliteCore_FILES = TWEAK.xm $(wildcard SCLAlertView/*.m)
-CyberEliteCore_CFLAGS = -fobjc-arc -std=c++11 -IVendor/
+# لێرەدا تەنها ئەو کتێبخانانە بهێڵەرەوە کە پڕۆژەکەت پێویستی پێیەتی
+CyberEliteCore_FILES = TWEAK.xm
+CyberEliteCore_CFLAGS = -fobjc-arc
+CyberEliteCore_FRAMEWORKS = UIKit
 
-# بەستنەوەی لایبرەری dobby لەگەڵ substitute بە شێوەی دروست
-CyberEliteCore_LDFLAGS = -lsubstitute -L. -ldobby
-
-include $(THEOS_MAKE_PATH)/tweak.mk
+include $(THEOS)/makefiles/tweak.mk
