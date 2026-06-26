@@ -3,7 +3,7 @@
 #include <string.h>
 
 // ====================================================================
-// 🛑 بێدەنگکردنی ئیرۆری وەشانە نوێیەکانی ئایۆئێس (iOS 26+ Deprecations Bypass)
+// 🛑 بێدەنگکردنی ئیرۆری وەشانە نوێیەکانی ئایۆئێس
 // ====================================================================
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
@@ -14,7 +14,7 @@
 extern "C" int DobbyHook(void *target_address, void *replace_call, void **origin_call);
 
 // ==========================================
-// 🎯 پێناسی ئۆفسێتەکان (Offsets & Base Addresses)
+// 🎯 پێناسی ئۆفسێتەکان
 // ==========================================
 #define OFFSET_AIM_LINE               0x2c138UL   
 #define OFFSET_POCKETS                0xec9ccUL   
