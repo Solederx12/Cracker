@@ -1,13 +1,14 @@
-ARCHS = arm64
-TARGET = iphone:clang:latest:14.0
+ARCHS = arm64 arm64e
+TARGET := iphone:clang:latest:14.0
 
 include $(THEOS)/makefiles/common.mk
 
-TWEAK_NAME = Kurdish80p
-Kurdish80p_FILES = TWEAK.xm
-Kurdish80p_CFLAGS = -fobjc-arc
+TWEAK_NAME = MyDobbyTweak
 
-# 🛠️ لێرەدا فایلی ستاتیکی Dobby بە دایلیبەکەتەوە دەبەستینەوە
-Kurdish80p_OBJ_FILES = libdobby.a
+MyDobbyTweak_FILES = TWEAK.xm
+MyDobbyTweak_CFLAGS = -fobjc-arc
+
+# لێرەدا بەستەرەکە (Linker) ئاگادار دەکەینەوە کە لایبرەرییەکە بخوێنێتەوە
+MyDobbyTweak_LDFLAGS = -L. -ldobby
 
 include $(THEOS_MAKE_PATH)/tweak.mk
