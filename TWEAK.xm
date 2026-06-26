@@ -8,14 +8,10 @@
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
 
-// پێناسەکردنی فەنکشنی Dobby لە جیاتی کۆدی دەستی بۆ ڕێگری لە کراشکردنی سۆفتوێرەکە
-#ifdef __cplusplus
+// پێناسەکردنی فەنکشنی Dobby بە شێوازی فەرمی بۆ ڕێگری لە خەتای کۆمپایلەر
 extern "C" {
-#endif
     int DobbyHook(void *target_address, void *replace_call, void **origin_call);
-#ifdef __cplusplus
 }
-#endif
 
 // ==========================================
 // 🎯 پێناسی ئۆفسێتەکان
@@ -308,7 +304,7 @@ __attribute__((constructor)) static void initMod() {
 
                 DobbyHook((void *)(baseAddress + OFFSET_GENERAL_PATCH_1), (void *)new_generalPatch1, (void **)&old_generalPatch1);
                 DobbyHook((void *)(baseAddress + OFFSET_GENERAL_PATCH_2), (void *)new_generalPatch2, (void **)&old_generalPatch2);
-                DobbyHook((void *)(baseAddress + OFFSET_FORCE_SHOW_GUIDELINE), (void *)new_forceShowGuideeline, (void **)&old_forceShowGuideline);
+                DobbyHook((void *)(baseAddress + OFFSET_FORCE_SHOW_GUIDELINE), (void *)new_forceShowGuideline, (void **)&old_forceShowGuideline);
                 DobbyHook((void *)(baseAddress + OFFSET_WIDE_LINE), (void *)new_wideLine, (void **)&old_wideLine);
                 DobbyHook((void *)(baseAddress + OFFSET_ANTI_BAN), (void *)new_antiBan, (void **)&old_antiBan);
             }
