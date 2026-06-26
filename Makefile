@@ -1,19 +1,12 @@
-TARGET := iphone:clang:latest:14.0
-ARCHS = arm64
-
-
-include $(THEOS)/makefiles/common.mk
-
+# لەناو Makefileـەکەتدا
 TWEAK_NAME = Kurdish80p
-
-# فایلەکان و فڕەیمۆرکەکانی پڕۆژەکە
 Kurdish80p_FILES = TWEAK.xm
-Kurdish80p_FRAMEWORKS = UIKit CoreGraphics QuartzCore
+Kurdish80p_CFLAGS = -fobjc-arc
+Kurdish80p_LDFLAGS = -ldobby
 
-# ڕێکخستنی سیفەتەکانی کۆمپایلەر
-Kurdish80p_CFLAGS = -fobjc-arc -I.
+# زیادکردنی ئەم دێڕە بۆ دابەزاندنی ئۆتۆماتیکی (ئەگەر Theosـەکەت نوێیە)
+include $(THEOS)/makefiles/common.mk
+include $(THEOS_MAKE_PATH)/tweak.mk
 
-# 🎯 بەستنەوەی ڕاستەوخۆی فایلی دۆبی لەناو فۆڵدەری سەرەکی پڕۆژەکەدا
-Kurdish80p_LDFLAGS = $(THEOS_PROJECT_DIR)/libdobby.a
-
-include $(THEOS)/makefiles/tweak.mk
+# یانیش بەکارهێنانی Submodule بۆ Dobby
+# git submodule add https://github.com/jmpews/Dobby.git libs/dobby
