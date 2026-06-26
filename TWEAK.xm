@@ -1,8 +1,6 @@
 #include <mach-o/dyld.h>
 #import <UIKit/UIKit.h>
 #include <string.h>
-#include <sys/mman.h> 
-#include <libkern/OSCacheControl.h> // ✅ زیادکراوە بۆ چارەسەری ئیرۆری sys_icache_invalidate
 
 // ====================================================================
 // 🛑 بێدەنگکردنی ئیرۆری وەشانە نوێیەکانی ئایۆئێس
@@ -10,8 +8,17 @@
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
 
+// پێناسەکردنی فەنکشنی Dobby لە جیاتی کۆدی دەستی بۆ ڕێگری لە کراشکردنی سۆفتوێرەکە
+#ifdef __cplusplus
+extern "C" {
+#endif
+    int DobbyHook(void *target_address, void *replace_call, void **origin_call);
+#ifdef __cplusplus
+}
+#endif
+
 // ==========================================
-// 🎯 پێناسی ئۆفسێتەکان (وەک خۆی ماوەتەوە)
+// 🎯 پێناسی ئۆفسێتەکان
 // ==========================================
 #define OFFSET_AIM_LINE               0x2c138UL   
 #define OFFSET_POCKETS                0xec9ccUL   
@@ -30,12 +37,12 @@
 #define OFFSET_ANTI_BAN               0x2fdcaa0UL
 
 // ==========================================
-// ️ دۆخی دوگمەکان (Booleans)
+// 🕹️ دۆخی دوگمەکان (Booleans)
 // ==========================================
 static BOOL aimLineEnabled          = NO;
 static BOOL pocketsEnabled          = NO;
 static BOOL autoplayEnabled         = NO;
-static BOOL tablesEnabled           = NO;
+static BOOL tablesEnabled          = NO;
 static BOOL customAimPointEnabled   = NO;
 static BOOL customAimAngleEnabled   = NO;
 static BOOL infinityAimTimeEnabled  = NO;
@@ -47,139 +54,92 @@ static BOOL wideLineEnabled         = NO;
 static BOOL antiBanEnabled          = NO;
 
 // ==========================================
-// 🛠️ فەنکشنەکانی هۆک (Native Inline Hook Implementation)
-// ==========================================
-// ئەم بەشە جێگای DobbyHookـی گرتۆتەوە بۆ ئەوەی پێویستمان بە libdobby.a نەبێت
-
-typedef void* (*func_ptr_t)(void*, ...);
-
-static void *hook_function(void *target, void *replacement, void **original) {
-    if (!target || !replacement) return NULL;
-    
-    size_t page_size = getpagesize();
-    void *page_start = (void *)((uintptr_t)target & ~(page_size - 1));
-    
-    // Allow writing to the code section
-    if (mprotect(page_start, page_size * 2, PROT_READ | PROT_WRITE | PROT_EXEC) == -1) {
-        return NULL;
-    }
-
-    // Save original bytes (first 12 bytes for ARM64 trampoline)
-    if (original) {
-        *original = target; 
-    }
-
-    uint32_t *code = (uint32_t *)target;
-    
-    // ARM64 Jump Instruction (MOV X16, #imm64; BR X16)
-    code[0] = 0xD2800010 | ((uintptr_t)replacement & 0xFFFF) << 5;
-    code[1] = 0xF2A00010 | (((uintptr_t)replacement >> 16) & 0xFFFF) << 5;
-    code[2] = 0xF2C00010 | (((uintptr_t)replacement >> 32) & 0xFFFF) << 5;
-    code[3] = 0xF2E00010 | (((uintptr_t)replacement >> 48) & 0xFFFF) << 5;
-    code[4] = 0xD61F0200;
-
-    // Flush cache ✅ ئێستا کێشەکە چارەسەر دەبێت
-    sys_icache_invalidate(target, 20);
-    
-    return target;
-}
-
-// Wrapper to match DobbyHook signature roughly
-int DobbyHook(void *target_address, void *replace_call, void **origin_call) {
-    hook_function(target_address, replace_call, origin_call);
-    return 0;
-}
-
-// ==========================================
-// ️ فەنکشنەکانی جێگرەوە (Hooks Logic - Unchanged)
+// 🛠️ فەنکشنەکانی جێگرەوە (Hooks Logic)
 // ==========================================
 
 bool (*old_isAimCorrect)(void* instance);
 bool new_isAimCorrect(void* instance) {
     if (aimLineEnabled) return true; 
-    return ((bool(*)(void*))old_isAimCorrect)(instance);
+    return old_isAimCorrect(instance);
 }
 
 bool (*old_getPocketAimPoints)(void* instance);
 bool new_getPocketAimPoints(void* instance) {
     if (pocketsEnabled) return true;
-    return ((bool(*)(void*))old_getPocketAimPoints)(instance);
+    return old_getPocketAimPoints(instance);
 }
 
 bool (*old_isAutoplayEnabled)(void* instance);
 bool new_isAutoplayEnabled(void* instance) {
     if (autoplayEnabled) return true;
-    return ((bool(*)(void*))old_isAutoplayEnabled)(instance);
+    return old_isAutoplayEnabled(instance);
 }
 
 bool (*old_tablesBypass)(void* instance);
 bool new_tablesBypass(void* instance) {
     if (tablesEnabled) return true;
-    return ((bool(*)(void*))old_tablesBypass)(instance);
+    return old_tablesBypass(instance);
 }
 
 void* (*old_getAimPoint)(void* instance, void* param1, void* param2, void* param3);
 void* new_getAimPoint(void* instance, void* param1, void* param2, void* param3) {
-    if (customAimPointEnabled) {}
-    return ((void*(*)(void*, void*, void*, void*))old_getAimPoint)(instance, param1, param2, param3);
+    return old_getAimPoint(instance, param1, param2, param3);
 }
 
 double (*old_getAimAngleTarget)(void* instance, void* param2);
 double new_getAimAngleTarget(void* instance, void* param2) {
     if (customAimAngleEnabled) return 0.0; 
-    return ((double(*)(void*, void*))old_getAimAngleTarget)(instance, param2);
+    return old_getAimAngleTarget(instance, param2);
 }
 
 double (*old_getAimTimePerShot)(void* instance, void* param2);
 double new_getAimTimePerShot(void* instance, void* param2) {
     if (infinityAimTimeEnabled) return 9999.0; 
-    return ((double(*)(void*, void*))old_getAimTimePerShot)(instance, param2);
+    return old_getAimTimePerShot(instance, param2);
 }
 
 void (*old_setupCueBallRack)(void* instance, void* param2);
 void new_setupCueBallRack(void* instance, void* param2) {
-    if (customRackEnabled) {}
-    ((void(*)(void*, void*))old_setupCueBallRack)(instance, param2);
+    old_setupCueBallRack(instance, param2);
 }
 
 void* (*old_getAimEvent)(void* instance, void* param1, void* param2, int param3);
 void* new_getAimEvent(void* instance, void* param1, void* param2, int param3) {
-    if (customAimEventEnabled) {}
-    return ((void*(*)(void*, void*, void*, int))old_getAimEvent)(instance, param1, param2, param3);
+    return old_getAimEvent(instance, param1, param2, param3);
 }
 
 bool (*old_generalPatch1)(void* instance);
 bool new_generalPatch1(void* instance) {
     if (generalPatchEnabled) return true;
-    return ((bool(*)(void*))old_generalPatch1)(instance);
+    return old_generalPatch1(instance);
 }
 
 bool (*old_generalPatch2)(void* instance);
 bool new_generalPatch2(void* instance) {
     if (generalPatchEnabled) return true;
-    return ((bool(*)(void*))old_generalPatch2)(instance);
+    return old_generalPatch2(instance);
 }
 
 bool (*old_forceShowGuideline)(void* instance);
 bool new_forceShowGuideline(void* instance) {
     if (forceShowGuideEnabled) return true;
-    return ((bool(*)(void*))old_forceShowGuideline)(instance);
+    return old_forceShowGuideline(instance);
 }
 
 bool (*old_wideLine)(void* instance);
 bool new_wideLine(void* instance) {
     if (wideLineEnabled) return true;
-    return ((bool(*)(void*))old_wideLine)(instance);
+    return old_wideLine(instance);
 }
 
 bool (*old_antiBan)(void* instance);
 bool new_antiBan(void* instance) {
     if (antiBanEnabled) return true;
-    return ((bool(*)(void*))old_antiBan)(instance);
+    return old_antiBan(instance);
 }
 
 // ====================================================================
-//  ڕووکاری بەکارهێنەر - پێناسی تەواوی مێتۆدەکان (Mod Menu Interface)
+//  ڕووکاری بەکارهێنەر (Mod Menu Interface)
 // ====================================================================
 @interface ModMenuWindow : UIWindow
 + (void)showMenu;
@@ -322,7 +282,7 @@ static UIButton *floatingButton = nil;
 @end
 
 // ==========================================
-// 🚀 لۆدبوونی ئۆتۆماتیکی و جێگیرکردنی تەواوی هوکەکان
+// 🚀 لۆدبوونی ئۆتۆماتیکی هوکەکان
 // ==========================================
 __attribute__((constructor)) static void initMod() {
     [[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationDidFinishLaunchingNotification
@@ -335,7 +295,7 @@ __attribute__((constructor)) static void initMod() {
             uintptr_t baseAddress = (uintptr_t)_dyld_get_image_header(0); 
             
             if (baseAddress) {
-                // Using our internal DobbyHook wrapper which uses mmap directly
+                // جێبەجێکردنی هوکەکان لە ڕێگەی Dobby کاتێک ژینگەکە مۆڵەت بدات
                 DobbyHook((void *)(baseAddress + OFFSET_AIM_LINE), (void *)new_isAimCorrect, (void **)&old_isAimCorrect);
                 DobbyHook((void *)(baseAddress + OFFSET_POCKETS), (void *)new_getPocketAimPoints, (void **)&old_getPocketAimPoints);
                 DobbyHook((void *)(baseAddress + OFFSET_AUTOPLAY), (void *)new_isAutoplayEnabled, (void **)&old_isAutoplayEnabled);
@@ -348,7 +308,7 @@ __attribute__((constructor)) static void initMod() {
 
                 DobbyHook((void *)(baseAddress + OFFSET_GENERAL_PATCH_1), (void *)new_generalPatch1, (void **)&old_generalPatch1);
                 DobbyHook((void *)(baseAddress + OFFSET_GENERAL_PATCH_2), (void *)new_generalPatch2, (void **)&old_generalPatch2);
-                DobbyHook((void *)(baseAddress + OFFSET_FORCE_SHOW_GUIDELINE), (void *)new_forceShowGuideline, (void **)&old_forceShowGuideline);
+                DobbyHook((void *)(baseAddress + OFFSET_FORCE_SHOW_GUIDELINE), (void *)new_forceShowGuideeline, (void **)&old_forceShowGuideline);
                 DobbyHook((void *)(baseAddress + OFFSET_WIDE_LINE), (void *)new_wideLine, (void **)&old_wideLine);
                 DobbyHook((void *)(baseAddress + OFFSET_ANTI_BAN), (void *)new_antiBan, (void **)&old_antiBan);
             }
