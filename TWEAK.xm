@@ -295,22 +295,22 @@ __attribute__((constructor)) static void initMod() {
             uintptr_t baseAddress = (uintptr_t)_dyld_get_image_header(0); 
             
             if (baseAddress) {
-                // بەکارهێنانی کاستی جێگیر بۆ ڕێگری لە گرتنی ئیرۆری پۆینتەر لە زمانی C++
-                DobbyHook((void *)(baseAddress + OFFSET_AIM_LINE), (void *)new_isAimCorrect, (void **)(uintptr_t)&old_isAimCorrect);
-                DobbyHook((void *)(baseAddress + OFFSET_POCKETS), (void *)new_getPocketAimPoints, (void **)(uintptr_t)&old_getPocketAimPoints);
-                DobbyHook((void *)(baseAddress + OFFSET_AUTOPLAY), (void *)new_isAutoplayEnabled, (void **)(uintptr_t)&old_isAutoplayEnabled);
-                DobbyHook((void *)(baseAddress + OFFSET_TABLES), (void *)new_tablesBypass, (void **)(uintptr_t)&old_tablesBypass);
-                DobbyHook((void *)(baseAddress + OFFSET_GET_AIM_POINT), (void *)new_getAimPoint, (void **)(uintptr_t)&old_getAimPoint);
-                DobbyHook((void *)(baseAddress + OFFSET_GET_AIM_ANGLE), (void *)new_getAimAngleTarget, (void **)(uintptr_t)&old_getAimAngleTarget);
-                DobbyHook((void *)(baseAddress + OFFSET_GET_AIM_TIME), (void *)new_getAimTimePerShot, (void **)(uintptr_t)&old_getAimTimePerShot);
-                DobbyHook((void *)(baseAddress + OFFSET_SETUP_CUE_BALL_RACK), (void *)new_setupCueBallRack, (void **)(uintptr_t)&old_setupCueBallRack);
-                DobbyHook((void *)(baseAddress + OFFSET_GET_AIM_EVENT), (void *)new_getAimEvent, (void **)(uintptr_t)&old_getAimEvent);
+                // 🛠️ لێرەدا هەموو فەنکشنەکان بە شێوازێکی تەواو سەلامەت بۆ uintptr_t کاست کراون تاوەکو بە دوو قۆناغ بگۆڕدرێن بۆ void*
+                DobbyHook((void *)(baseAddress + OFFSET_AIM_LINE), (void *)(uintptr_t)new_isAimCorrect, (void **)(uintptr_t)&old_isAimCorrect);
+                DobbyHook((void *)(baseAddress + OFFSET_POCKETS), (void *)(uintptr_t)new_getPocketAimPoints, (void **)(uintptr_t)&old_getPocketAimPoints);
+                DobbyHook((void *)(baseAddress + OFFSET_AUTOPLAY), (void *)(uintptr_t)new_isAutoplayEnabled, (void **)(uintptr_t)&old_isAutoplayEnabled);
+                DobbyHook((void *)(baseAddress + OFFSET_TABLES), (void *)(uintptr_t)new_tablesBypass, (void **)(uintptr_t)&old_tablesBypass);
+                DobbyHook((void *)(baseAddress + OFFSET_GET_AIM_POINT), (void *)(uintptr_t)new_getAimPoint, (void **)(uintptr_t)&old_getAimPoint);
+                DobbyHook((void *)(baseAddress + OFFSET_GET_AIM_ANGLE), (void *)(uintptr_t)new_getAimAngleTarget, (void **)(uintptr_t)&old_getAimAngleTarget);
+                DobbyHook((void *)(baseAddress + OFFSET_GET_AIM_TIME), (void *)(uintptr_t)new_getAimTimePerShot, (void **)(uintptr_t)&old_getAimTimePerShot);
+                DobbyHook((void *)(baseAddress + OFFSET_SETUP_CUE_BALL_RACK), (void *)(uintptr_t)new_setupCueBallRack, (void **)(uintptr_t)&old_setupCueBallRack);
+                DobbyHook((void *)(baseAddress + OFFSET_GET_AIM_EVENT), (void *)(uintptr_t)new_getAimEvent, (void **)(uintptr_t)&old_getAimEvent);
 
-                DobbyHook((void *)(baseAddress + OFFSET_GENERAL_PATCH_1), (void *)new_generalPatch1, (void **)(uintptr_t)&old_generalPatch1);
-                DobbyHook((void *)(baseAddress + OFFSET_GENERAL_PATCH_2), (void *)new_generalPatch2, (void **)(uintptr_t)&old_generalPatch2);
-                DobbyHook((void *)(baseAddress + OFFSET_FORCE_SHOW_GUIDELINE), (void *)new_forceShowGuideline, (void **)(uintptr_t)&old_forceShowGuideline);
-                DobbyHook((void *)(baseAddress + OFFSET_WIDE_LINE), (void *)new_wideLine, (void **)(uintptr_t)&old_wideLine);
-                DobbyHook((void *)(baseAddress + OFFSET_ANTI_BAN), (void *)new_antiBan, (void **)(uintptr_t)&old_antiBan);
+                DobbyHook((void *)(baseAddress + OFFSET_GENERAL_PATCH_1), (void *)(uintptr_t)new_generalPatch1, (void **)(uintptr_t)&old_generalPatch1);
+                DobbyHook((void *)(baseAddress + OFFSET_GENERAL_PATCH_2), (void *)(uintptr_t)new_generalPatch2, (void **)(uintptr_t)&old_generalPatch2);
+                DobbyHook((void *)(baseAddress + OFFSET_FORCE_SHOW_GUIDELINE), (void *)(uintptr_t)new_forceShowGuideline, (void **)(uintptr_t)&old_forceShowGuideline);
+                DobbyHook((void *)(baseAddress + OFFSET_WIDE_LINE), (void *)(uintptr_t)new_wideLine, (void **)(uintptr_t)&old_wideLine);
+                DobbyHook((void *)(baseAddress + OFFSET_ANTI_BAN), (void *)(uintptr_t)new_antiBan, (void **)(uintptr_t)&old_antiBan);
             }
             [ModMenuWindow showMenu];
         });
