@@ -18,22 +18,26 @@ extern "C" {
 #endif
 
 // ==========================================
-// 🎯 پێناسی ئۆفسێتەکان
-// ==========================================
+// 🎯 CYBER ELITE CORE - OFFSETS CONFIGURATION
+
+// --- هێڵ و ئامانج (Aiming & Guidelines) ---
 #define OFFSET_AIM_LINE               0x2c138UL   
-#define OFFSET_POCKETS                0xec9ccUL   
-#define OFFSET_AUTOPLAY               0x1318ff4UL 
-#define OFFSET_TABLES                 0x118568UL  
+#define OFFSET_FORCE_SHOW_GUIDELINE   0x11b488UL 
+#define OFFSET_WIDE_LINE              0x30c2fc0UL
 #define OFFSET_GET_AIM_POINT          0x8e35f8UL
 #define OFFSET_GET_AIM_ANGLE          0x1da9b0UL
 #define OFFSET_GET_AIM_TIME           0xbb0dd0UL
 #define OFFSET_GET_AIM_EVENT          0x1113d8UL
+
+// --- تایبەتمەندی و یاریکردن (Game Features) ---
+#define OFFSET_POCKETS                0xec9ccUL   
+#define OFFSET_AUTOPLAY               0x1318ff4UL 
+#define OFFSET_TABLES                 0x118568UL  
 #define OFFSET_SETUP_CUE_BALL_RACK    0x6274ecUL
 
+// --- پاراستن و پاتچە گشتییەکان (Security & Patches) ---
 #define OFFSET_GENERAL_PATCH_1        0x2a3da8UL 
 #define OFFSET_GENERAL_PATCH_2        0x2a3ee4UL 
-#define OFFSET_FORCE_SHOW_GUIDELINE   0x11b488UL 
-#define OFFSET_WIDE_LINE              0x30c2fc0UL
 #define OFFSET_ANTI_BAN               0x2fdcaa0UL
 
 // ==========================================
