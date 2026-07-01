@@ -1,1 +1,72 @@
+==================================================
+Dobby Hook Framework - Extracted Library Info
+==================================================
+Framework Name: Dobby (Lightweight memory hooking framework)
+Version: Dobby-20230329-b0176de
+Architectures: ARM, ARM64, IA32 (x86), X64
 
+--------------------------------------------------
+1. OBJECT FILES (.o)
+--------------------------------------------------
+* Assembler & Codegen:
+  - assembler.cc.o
+  - assembler-arm.cc.o
+  - assembler-arm64.cc.o
+  - assembler-ia32.cc.o
+  - assembler-x64.cc.o
+  - codegen-arm.cc.o
+  - codegen-arm64.cc.o
+  - codegen-ia32.cc.o
+  - codegen-x64.cc.o
+  - CodeBufferBase.cc.o
+  - AssemblyCodeBuilder.cc.o
+
+* Relocation:
+  - InstructionRelocationARM.cc.o
+  - InstructionRelocationARM64.cc.o
+  - InstructionRelocationX86.cc.o
+  - InstructionRelocationX86Shared.cc.o
+  - InstructionRelocationX64.cc.o
+  - x86_insn_decode.c.o
+
+* Trampoline & Bridges:
+  - InterceptRouting.cpp.o
+  - trampoline_arm.cc.o
+  - trampoline_arm64.cc.o
+  - trampoline_x86.cc.o
+  - trampoline_x64.cc.o
+  - common_bridge_handler.cc.o
+  - closure_bridge_arm.cc.o
+  - closure_bridge_arm64.cc.o
+  - closure_bridge_x86.cc.o
+  - closure_bridge_x64.cc.o
+  - ClosureTrampolineARM.cc.o
+  - ClosureTrampolineARM64.cc.o
+  - ClosureTrampolineX86.cc.o
+  - ClosureTrampolineX64.cc.o
+
+* System & Management:
+  - CpuFeature.cc.o
+  - CpuRegister.cc.o
+  - MemoryAllocator.cc.o
+  - InstructionInstrument.cc.o
+  - RoutingImpl.cc.o
+  - instrument_routing_handler.cc.o
+  - FunctionInlineHook.cc.o
+  - RoutingPlugin.cc.o
+  - dobby.cpp.o
+  - Interceptor.cpp.o
+  - InterceptEntry.cpp.o
+  - ProcessRuntimeUtility.cc.o
+
+--------------------------------------------------
+2. KEY API SYMBOLS & FUNCTIONS
+--------------------------------------------------
+* _DobbyHook                  -> Main function to place hooks in memory
+* _DobbyInstrument            -> For monitoring and logging code execution
+* _DobbyCodePatch             -> Directly patching binary code in memory
+* _DobbyDestroy               -> Destroys and removes hooks
+* _DobbyGetVersion            -> Returns the framework version
+* _ClearCache / __clear_cache -> Clears CPU instruction cache after patching
+* _common_closure_bridge_handler -> Handles routing between functions
+==================================================
