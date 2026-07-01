@@ -5,15 +5,12 @@ include $(THEOS)/makefiles/common.mk
 
 TWEAK_NAME = CyberEliteCore
 
-# ئەگەر فایلی libdobby.a لە ناو فۆڵدەرێکی پڕۆژەکەتدا بێت بە ناوی libs
-CyberEliteCore_LDFLAGS += ./libs/libdobby.a
-
-# یان ئەگەر فایلی dobby.framework بەکاردێنیت
-CyberEliteCore_FRAMEWORKS += dobby
-
-# لێرەدا تەنها ئەو کتێبخانانە بهێڵەرەوە کە پڕۆژەکەت پێویستی پێیەتی
+# ١. لێرەدا فایلەکان و فڕەیمۆرکە بنەڕەتییەکانی ئایۆئێس دیاری دەکەین
 CyberEliteCore_FILES = TWEAK.xm
 CyberEliteCore_CFLAGS = -fobjc-arc
 CyberEliteCore_FRAMEWORKS = UIKit
+
+# ٢. لێرەدا فایلی ڕەقی Dobby دەبەستینەوە بە پڕۆژەکەوە بە بێ ئەوەی بسڕێتەوە
+CyberEliteCore_LDFLAGS += ./libs/libdobby.a
 
 include $(THEOS)/makefiles/tweak.mk
