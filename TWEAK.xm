@@ -28,6 +28,7 @@ extern "C" {
 #define OFFSET_GET_AIM_ANGLE          0x1da9b0UL
 #define OFFSET_GET_AIM_TIME           0xbb0dd0UL
 #define OFFSET_GET_AIM_EVENT          0x1113d8UL
+#define OFFSET_CUE_BALL_TRAJECTORY    0x000000UL 
 
 // --- تایبەتمەندی و یاریکردن (Game Features) ---
 #define OFFSET_POCKETS                0xec9ccUL   
@@ -56,6 +57,7 @@ static BOOL generalPatchEnabled     = NO;
 static BOOL forceShowGuideEnabled   = NO;
 static BOOL wideLineEnabled         = NO;
 static BOOL antiBanEnabled          = NO;
+static BOOL trajectoryEnabled       = NO; 
 
 // ==========================================
 // 🛠️ فەنکشنەکانی جێگرەوە (Hooks Logic)
@@ -142,6 +144,12 @@ bool new_antiBan(void* instance) {
     return old_antiBan(instance);
 }
 
+bool (*old_showCueBallTrajectory)(void* instance);
+bool new_showCueBallTrajectory(void* instance) {
+    if (trajectoryEnabled) return true;
+    return old_showCueBallTrajectory(instance);
+}
+
 // ====================================================================
 //  ڕووکاری بەکارهێنەر (Mod Menu Interface)
 // ====================================================================
@@ -162,6 +170,7 @@ bool new_antiBan(void* instance) {
 + (void)toggleForceGuide:(UIButton *)sender;
 + (void)toggleGeneralPatch:(UIButton *)sender;
 + (void)hideMenu;
++ (void)completelyHideMenu; // 🆕 فەنکشنی نوێ بۆ شاردنەوەی گشتی
 + (void)showFromFloating;
 + (void)dragButton:(UIPanGestureRecognizer *)gesture;
 @end
@@ -195,8 +204,9 @@ static UIButton *floatingButton = nil;
             titleLabel.font = [UIFont boldSystemFontOfSize:18];
             [mainMenuView addSubview:titleLabel];
             
-            buttonScrollView = [[UIScrollView alloc] initWithFrame:CGRectMake(5, 60, 240, 350)];
-            buttonScrollView.contentSize = CGSizeMake(240, 670); 
+            // کەمکردنەوەی بەرزی سکڕۆڵەکە بۆ ئەوەی شوێنی دوگمەکان لە خوارەوە ببێتەوە
+            buttonScrollView = [[UIScrollView alloc] initWithFrame:CGRectMake(5, 60, 240, 310)];
+            buttonScrollView.contentSize = CGSizeMake(240, 720); 
             buttonScrollView.showsVerticalScrollIndicator = YES;
             [mainMenuView addSubview:buttonScrollView];
             
@@ -214,14 +224,27 @@ static UIButton *floatingButton = nil;
             [self createButtonWithTitle:@"دەرخستنی زۆرەملێ: OFF" tag:12 yPos:555 action:@selector(toggleForceGuide:)]; 
             [self createButtonWithTitle:@"پاتچی گشتی: OFF" tag:13 yPos:605 action:@selector(toggleGeneralPatch:)]; 
             
+            // 🆕 دوگمەی یەکەم: داخستنی کاتی (تەنها ئایکۆنەکە دەمێنێتەوە)
             UIButton *closeBtn = [UIButton buttonWithType:UIButtonTypeSystem];
-            closeBtn.frame = CGRectMake(20, 420, 210, 40);
-            closeBtn.backgroundColor = [UIColor redColor];
+            closeBtn.frame = CGRectMake(10, 385, 110, 40);
+            closeBtn.backgroundColor = [UIColor orangeColor];
             closeBtn.layer.cornerRadius = 8;
-            [closeBtn setTitle:@"داخستنی مینو" forState:UIControlStateNormal];
+            [closeBtn setTitle:@"داخستنی کاتی" forState:UIControlStateNormal];
             [closeBtn setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+            closeBtn.titleLabel.font = [UIFont systemFontOfSize:13];
             [closeBtn addTarget:self action:@selector(hideMenu) forControlEvents:UIControlEventTouchUpInside];
             [mainMenuView addSubview:closeBtn];
+            
+            // 🆕 دوگمەی دووەم: شاردنەوەی گشتی و تەواوەتی (تەنانەت ئایکۆنەکەش نامێنێت)
+            UIButton *destroyBtn = [UIButton buttonWithType:UIButtonTypeSystem];
+            destroyBtn.frame = CGRectMake(130, 385, 110, 40);
+            destroyBtn.backgroundColor = [UIColor redColor];
+            destroyBtn.layer.cornerRadius = 8;
+            [destroyBtn setTitle:@"شاردنەوەی تەواو" forState:UIControlStateNormal];
+            [destroyBtn setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+            destroyBtn.titleLabel.font = [UIFont systemFontOfSize:13];
+            [destroyBtn addTarget:self action:@selector(completelyHideMenu) forControlEvents:UIControlEventTouchUpInside];
+            [mainMenuView addSubview:destroyBtn];
             
             floatingButton = [UIButton buttonWithType:UIButtonTypeSystem];
             floatingButton.frame = CGRectMake(15, 120, 55, 55);
@@ -251,11 +274,17 @@ static UIButton *floatingButton = nil;
     [buttonScrollView addSubview:btn];
 }
 
++ (void)toggleAimPoint:(UIButton *)sender { 
+    customAimPointEnabled = !customAimPointEnabled; 
+    trajectoryEnabled = customAimPointEnabled; 
+    sender.backgroundColor = customAimPointEnabled ? [UIColor greenColor] : [UIColor grayColor]; 
+    [sender setTitle:customAimPointEnabled ? @"ڕێڕەوی نیشانە: ON" : @"ڕێڕەوی نیشانە: OFF" forState:UIControlStateNormal]; 
+}
+
 + (void)toggleAim:(UIButton *)sender { aimLineEnabled = !aimLineEnabled; sender.backgroundColor = aimLineEnabled ? [UIColor greenColor] : [UIColor grayColor]; [sender setTitle:aimLineEnabled ? @"دەرکەوتنی خەت: ON" : @"دەرکەوتنی خەت: OFF" forState:UIControlStateNormal]; }
 + (void)togglePockets:(UIButton *)sender { pocketsEnabled = !pocketsEnabled; sender.backgroundColor = pocketsEnabled ? [UIColor greenColor] : [UIColor grayColor]; [sender setTitle:pocketsEnabled ? @"کونی ساحەکان: ON" : @"کونی ساحەکان: OFF" forState:UIControlStateNormal]; }
 + (void)toggleAutoplay:(UIButton *)sender { autoplayEnabled = !autoplayEnabled; sender.backgroundColor = autoplayEnabled ? [UIColor greenColor] : [UIColor grayColor]; [sender setTitle:autoplayEnabled ? @"ئەوتۆ پلەی: ON" : @"ئەوتۆ پلەی: OFF" forState:UIControlStateNormal]; }
 + (void)toggleTables:(UIButton *)sender { tablesEnabled = !tablesEnabled; sender.backgroundColor = tablesEnabled ? [UIColor greenColor] : [UIColor grayColor]; [sender setTitle:tablesEnabled ? @"ساحەکان: ON" : @"ساحەکان: OFF" forState:UIControlStateNormal]; }
-+ (void)toggleAimPoint:(UIButton *)sender { customAimPointEnabled = !customAimPointEnabled; sender.backgroundColor = customAimPointEnabled ? [UIColor greenColor] : [UIColor grayColor]; [sender setTitle:customAimPointEnabled ? @"ڕێڕەوی نیشانە: ON" : @"ڕێڕەوی نیشانە: OFF" forState:UIControlStateNormal]; }
 + (void)toggleAimAngle:(UIButton *)sender { customAimAngleEnabled = !customAimAngleEnabled; sender.backgroundColor = customAimAngleEnabled ? [UIColor greenColor] : [UIColor grayColor]; [sender setTitle:customAimAngleEnabled ? @"گۆشەی ئامانج: ON" : @"گۆشەی ئامانج: OFF" forState:UIControlStateNormal]; }
 + (void)toggleAimTime:(UIButton *)sender { infinityAimTimeEnabled = !infinityAimTimeEnabled; sender.backgroundColor = infinityAimTimeEnabled ? [UIColor greenColor] : [UIColor grayColor]; [sender setTitle:infinityAimTimeEnabled ? @"کاتی بێکۆتایی: ON" : @"کاتی بێکۆتایی: OFF" forState:UIControlStateNormal]; }
 + (void)toggleRack:(UIButton *)sender { customRackEnabled = !customRackEnabled; sender.backgroundColor = customRackEnabled ? [UIColor greenColor] : [UIColor grayColor]; [sender setTitle:customRackEnabled ? @"ڕێکخستنی تۆپ: ON" : @"ڕێکخستنی تۆپ: OFF" forState:UIControlStateNormal]; }
@@ -269,16 +298,36 @@ static UIButton *floatingButton = nil;
     if (mainMenuView) mainMenuView.hidden = YES;
     if (floatingButton) floatingButton.hidden = NO;
 }
+
+// 🆕 سڕینەوەی هەموو شتێک لەسەر شاشە بە یەکجاری
++ (void)completelyHideMenu {
+    if (mainMenuView) mainMenuView.hidden = YES;
+    if (floatingButton) floatingButton.hidden = YES;
+}
+
 + (void)showFromFloating {
     if (mainMenuView) mainMenuView.hidden = NO;
     if (floatingButton) floatingButton.hidden = YES;
 }
+
 + (void)dragButton:(UIPanGestureRecognizer *)gesture {
     if (!menuInstance || !gesture.view) return;
     CGPoint translation = [gesture translationInView:menuInstance];
     gesture.view.center = CGPointMake(gesture.view.center.x + translation.x, gesture.view.center.y + translation.y);
     [gesture setTranslation:CGPointZero inView:menuInstance];
 }
+
+// 🆕 وەرگرتنی جوڵەی ڕاتەکاندنی مۆبایل (Shake) بۆ هێنانەوەی ئایکۆنەکە
+- (void)motionEnded:(UIEventSubtype)motion withEvent:(UIEvent *)event {
+    if (motion == UIEventSubtypeMotionShake) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (floatingButton && floatingButton.hidden && mainMenuView.hidden) {
+                floatingButton.hidden = NO; // ئایکۆنەکە دەردەکەوێتەوە بە سەلامەتی
+            }
+        });
+    }
+}
+
 - (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event {
     UIView *view = [super hitTest:point withEvent:event];
     return (view == self) ? nil : view;
@@ -299,7 +348,6 @@ __attribute__((constructor)) static void initMod() {
             uintptr_t baseAddress = (uintptr_t)_dyld_get_image_header(0); 
             
             if (baseAddress) {
-                // 🛠️ لێرەدا هەموو فەنکشنەکان بە شێوازێکی تەواو سەلامەت بۆ uintptr_t کاست کراون تاوەکو بە دوو قۆناغ بگۆڕدرێن بۆ void*
                 DobbyHook((void *)(baseAddress + OFFSET_AIM_LINE), (void *)(uintptr_t)new_isAimCorrect, (void **)(uintptr_t)&old_isAimCorrect);
                 DobbyHook((void *)(baseAddress + OFFSET_POCKETS), (void *)(uintptr_t)new_getPocketAimPoints, (void **)(uintptr_t)&old_getPocketAimPoints);
                 DobbyHook((void *)(baseAddress + OFFSET_AUTOPLAY), (void *)(uintptr_t)new_isAutoplayEnabled, (void **)(uintptr_t)&old_isAutoplayEnabled);
@@ -315,6 +363,7 @@ __attribute__((constructor)) static void initMod() {
                 DobbyHook((void *)(baseAddress + OFFSET_FORCE_SHOW_GUIDELINE), (void *)(uintptr_t)new_forceShowGuideline, (void **)(uintptr_t)&old_forceShowGuideline);
                 DobbyHook((void *)(baseAddress + OFFSET_WIDE_LINE), (void *)(uintptr_t)new_wideLine, (void **)(uintptr_t)&old_wideLine);
                 DobbyHook((void *)(baseAddress + OFFSET_ANTI_BAN), (void *)(uintptr_t)new_antiBan, (void **)(uintptr_t)&old_antiBan);
+                DobbyHook((void *)(baseAddress + OFFSET_CUE_BALL_TRAJECTORY), (void *)(uintptr_t)new_showCueBallTrajectory, (void **)(uintptr_t)&old_showCueBallTrajectory);
             }
             [ModMenuWindow showMenu];
         });
