@@ -8,7 +8,7 @@
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
 
-// پێناسەکردنی فەنکشنی Dobby بە شێوازێکی تەواو جێگیر بۆ هەموو وەشانەکانی کۆمپایلەر
+// پێناسەکردنی فەنکشنی Dobby
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -126,6 +126,7 @@ bool new_generalPatch2(void* instance) {
     return old_generalPatch2(instance);
 }
 
+// ⚠️ لێرەدا هەڵەکە چاککراوەتەوە: گۆڕدرا بۆ old_forceShowGuideline
 bool (*old_forceShowGuideline)(void* instance);
 bool new_forceShowGuideline(void* instance) {
     if (forceShowGuideEnabled) return true;
@@ -170,7 +171,7 @@ bool new_showCueBallTrajectory(void* instance) {
 + (void)toggleForceGuide:(UIButton *)sender;
 + (void)toggleGeneralPatch:(UIButton *)sender;
 + (void)hideMenu;
-+ (void)completelyHideMenu; // 🆕 فەنکشنی نوێ بۆ شاردنەوەی گشتی
++ (void)completelyHideMenu; 
 + (void)showFromFloating;
 + (void)dragButton:(UIPanGestureRecognizer *)gesture;
 @end
@@ -204,7 +205,6 @@ static UIButton *floatingButton = nil;
             titleLabel.font = [UIFont boldSystemFontOfSize:18];
             [mainMenuView addSubview:titleLabel];
             
-            // کەمکردنەوەی بەرزی سکڕۆڵەکە بۆ ئەوەی شوێنی دوگمەکان لە خوارەوە ببێتەوە
             buttonScrollView = [[UIScrollView alloc] initWithFrame:CGRectMake(5, 60, 240, 310)];
             buttonScrollView.contentSize = CGSizeMake(240, 720); 
             buttonScrollView.showsVerticalScrollIndicator = YES;
@@ -224,7 +224,6 @@ static UIButton *floatingButton = nil;
             [self createButtonWithTitle:@"دەرخستنی زۆرەملێ: OFF" tag:12 yPos:555 action:@selector(toggleForceGuide:)]; 
             [self createButtonWithTitle:@"پاتچی گشتی: OFF" tag:13 yPos:605 action:@selector(toggleGeneralPatch:)]; 
             
-            // 🆕 دوگمەی یەکەم: داخستنی کاتی (تەنها ئایکۆنەکە دەمێنێتەوە)
             UIButton *closeBtn = [UIButton buttonWithType:UIButtonTypeSystem];
             closeBtn.frame = CGRectMake(10, 385, 110, 40);
             closeBtn.backgroundColor = [UIColor orangeColor];
@@ -235,7 +234,6 @@ static UIButton *floatingButton = nil;
             [closeBtn addTarget:self action:@selector(hideMenu) forControlEvents:UIControlEventTouchUpInside];
             [mainMenuView addSubview:closeBtn];
             
-            // 🆕 دوگمەی دووەم: شاردنەوەی گشتی و تەواوەتی (تەنانەت ئایکۆنەکەش نامێنێت)
             UIButton *destroyBtn = [UIButton buttonWithType:UIButtonTypeSystem];
             destroyBtn.frame = CGRectMake(130, 385, 110, 40);
             destroyBtn.backgroundColor = [UIColor redColor];
@@ -299,7 +297,6 @@ static UIButton *floatingButton = nil;
     if (floatingButton) floatingButton.hidden = NO;
 }
 
-// 🆕 سڕینەوەی هەموو شتێک لەسەر شاشە بە یەکجاری
 + (void)completelyHideMenu {
     if (mainMenuView) mainMenuView.hidden = YES;
     if (floatingButton) floatingButton.hidden = YES;
@@ -317,12 +314,16 @@ static UIButton *floatingButton = nil;
     [gesture setTranslation:CGPointZero inView:menuInstance];
 }
 
-// 🆕 وەرگرتنی جوڵەی ڕاتەکاندنی مۆبایل (Shake) بۆ هێنانەوەی ئایکۆنەکە
+// زیادکردنی تایبەتمەندی ڕاتەکاندن (Shake)
+- (BOOL)canBecomeFirstResponder {
+    return YES;
+}
+
 - (void)motionEnded:(UIEventSubtype)motion withEvent:(UIEvent *)event {
     if (motion == UIEventSubtypeMotionShake) {
         dispatch_async(dispatch_get_main_queue(), ^{
             if (floatingButton && floatingButton.hidden && mainMenuView.hidden) {
-                floatingButton.hidden = NO; // ئایکۆنەکە دەردەکەوێتەوە بە سەلامەتی
+                floatingButton.hidden = NO; 
             }
         });
     }
