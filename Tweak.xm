@@ -17,6 +17,8 @@ extern "C" {
 }
 #endif
 
+{ Filter = { Bundles = ( "com.miniclip.8ballpoolmult" ); }; }
+
 // ==========================================
 // 🎯 CYBER ELITE CORE - OFFSETS CONFIGURATION
 
