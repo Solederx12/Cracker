@@ -28,7 +28,7 @@ extern "C" {
 #define OFFSET_GET_AIM_ANGLE          0x1da9b0UL
 #define OFFSET_GET_AIM_TIME           0xbb0dd0UL
 #define OFFSET_GET_AIM_EVENT          0x1113d8UL
-#define OFFSET_CUE_BALL_TRAJECTORY    0x000000UL 
+#define OFFSET_CUE_BALL_TRAJECTORY    0x000000UL // ⚠️ لێرەدا ئۆفسێتی فەنکشنی فیزیکی تراژێکتۆری دادەنێیت
 
 // --- تایبەتمەندی و یاریکردن (Game Features) ---
 #define OFFSET_POCKETS                0xec9ccUL   
@@ -109,8 +109,22 @@ void new_setupCueBallRack(void* instance, void* param2) {
     old_setupCueBallRack(instance, param2);
 }
 
+// 👑 لۆجیکی داینامیکی بەستنەوەی خەت بە هێزی دارەکەوە
 void* (*old_getAimEvent)(void* instance, void* param1, void* param2, int param3);
 void* new_getAimEvent(void* instance, void* param1, void* param2, int param3) {
+    if (customAimPointEnabled && instance != NULL) {
+        // خوێندنەوەی بەهای هێزی دارەکە لە ناو میمۆری GameManager (بە شێوەی باو لە ئۆفسێتەکانی دەوروبەری 0x60 یان وەک فڵۆت دەبێت)
+        // لێرەدا پشکنین دەکەین ئەگەر قوەتەکە بەرز بوو، ڕێژەی Bounce و درێژی خەتەکە بەرز دەکەینەوە
+        float *cuePower = (float *)((uintptr_t)instance + 0x64); // ئۆفسێتی گریمانەیی هێز لەناو GameManager
+        
+        if (cuePower && *cuePower > 0.05f) {
+            // ئەگەر دارەکە هێزی تێدابوو، هێڵەکە درێژ دەبێت و هڵبەزینەکان زیاد دەکەن
+            trajectoryEnabled = YES;
+        } else {
+            // ئەگەر دارەکە ڕانەکێشرابوو یان هێزی نەمابوو، خەتەکە دەوەستێت
+            trajectoryEnabled = NO;
+        }
+    }
     return old_getAimEvent(instance, param1, param2, param3);
 }
 
@@ -126,7 +140,6 @@ bool new_generalPatch2(void* instance) {
     return old_generalPatch2(instance);
 }
 
-// ⚠️ لێرەدا هەڵەکە چاککراوەتەوە: گۆڕدرا بۆ old_forceShowGuideline
 bool (*old_forceShowGuideline)(void* instance);
 bool new_forceShowGuideline(void* instance) {
     if (forceShowGuideEnabled) return true;
@@ -145,9 +158,21 @@ bool new_antiBan(void* instance) {
     return old_antiBan(instance);
 }
 
+// 🎱 لۆجیکی نیشاندانی ڕێڕەوی تۆپ و هڵبەزینی دیوارەکان بەپێی قوەت
+int (*old_getMaxBounces)(void* instance);
+int new_getMaxBounces(void* instance) {
+    if (customAimPointEnabled) {
+        // ئەگەر مینیۆکە چالاک بوو، ژمارەی هڵبەزینەکان لەسەر دیوارەکە داینامیکی دەکەین (بۆ نموونە 5 جار بۆ قیاساتی تەواو)
+        return 5;
+    }
+    return old_getMaxBounces ? old_getMaxBounces(instance) : 1;
+}
+
 bool (*old_showCueBallTrajectory)(void* instance);
 bool new_showCueBallTrajectory(void* instance) {
-    if (trajectoryEnabled) return true;
+    if (customAimPointEnabled) {
+        return trajectoryEnabled; // بەپێی قوەتی دارەکە کە لەسەرەوە ئەژمارکراوە (YES یان NO) دەبێت
+    }
     return old_showCueBallTrajectory(instance);
 }
 
@@ -214,7 +239,7 @@ static UIButton *floatingButton = nil;
             [self createButtonWithTitle:@"کونی ساحەکان: OFF" tag:2 yPos:55 action:@selector(togglePockets:)];
             [self createButtonWithTitle:@"ئەوتۆ پلەی: OFF" tag:3 yPos:105 action:@selector(toggleAutoplay:)];
             [self createButtonWithTitle:@"ساحەکان: OFF" tag:4 yPos:155 action:@selector(toggleTables:)];
-            [self createButtonWithTitle:@"ڕێڕەوی نیشانە: OFF" tag:5 yPos:205 action:@selector(toggleAimPoint:)];
+            [self createButtonWithTitle:@"ڕێڕەوی داینامیکی قوەت: OFF" tag:5 yPos:205 action:@selector(toggleAimPoint:)];
             [self createButtonWithTitle:@"گۆشەی ئامانج: OFF" tag:6 yPos:255 action:@selector(toggleAimAngle:)];
             [self createButtonWithTitle:@"کاتی بێکۆتایی: OFF" tag:7 yPos:305 action:@selector(toggleAimTime:)];
             [self createButtonWithTitle:@"ڕێکخستنی تۆپ: OFF" tag:8 yPos:355 action:@selector(toggleRack:)];
@@ -274,9 +299,8 @@ static UIButton *floatingButton = nil;
 
 + (void)toggleAimPoint:(UIButton *)sender { 
     customAimPointEnabled = !customAimPointEnabled; 
-    trajectoryEnabled = customAimPointEnabled; 
     sender.backgroundColor = customAimPointEnabled ? [UIColor greenColor] : [UIColor grayColor]; 
-    [sender setTitle:customAimPointEnabled ? @"ڕێڕەوی نیشانە: ON" : @"ڕێڕەوی نیشانە: OFF" forState:UIControlStateNormal]; 
+    [sender setTitle:customAimPointEnabled ? @"ڕێڕەوی داینامیکی قوەت: ON" : @"ڕێڕەوی داینامیکی قوەت: OFF" forState:UIControlStateNormal]; 
 }
 
 + (void)toggleAim:(UIButton *)sender { aimLineEnabled = !aimLineEnabled; sender.backgroundColor = aimLineEnabled ? [UIColor greenColor] : [UIColor grayColor]; [sender setTitle:aimLineEnabled ? @"دەرکەوتنی خەت: ON" : @"دەرکەوتنی خەت: OFF" forState:UIControlStateNormal]; }
@@ -314,7 +338,6 @@ static UIButton *floatingButton = nil;
     [gesture setTranslation:CGPointZero inView:menuInstance];
 }
 
-// زیادکردنی تایبەتمەندی ڕاتەکاندن (Shake)
 - (BOOL)canBecomeFirstResponder {
     return YES;
 }
