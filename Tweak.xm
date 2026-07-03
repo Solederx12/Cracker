@@ -17,9 +17,6 @@ extern "C" {
 }
 #endif
 
-// ⚠️ تێبینی: ئەم هێڵەی خوارەوەم کۆمێنت کرد چونکە شوێنی لەناو فایلی plistـدایە نەک ئێرە
-// { Filter = { Bundles = ( "com.miniclip.8ballpoolmult" ); }; }
-
 // ==========================================
 // 🎯 CYBER ELITE CORE - OFFSETS CONFIGURATION
 
@@ -174,10 +171,14 @@ bool new_showCueBallTrajectory(void* instance) {
 // ====================================================================
 // 🛠️ پاتچی پڕۆفیشناڵی کێشەی 6902 (Sideload / Receipt Bypass)
 // ====================================================================
+@interface FBSDKPaymentProductRequestor : NSObject
+- (id)fetchDeviceReceipt;
++ (id)fetchDeviceReceipt;
+@end
+
 %hook FBSDKPaymentProductRequestor
 - (id)fetchDeviceReceipt {
     id originalReceipt = %orig;
-    // ئەگەر فایلی کڕینی ئەپ ستۆر بوونی نەبوو (سایدلۆد کرابوو) داتایەکی ساختەی پێدەدەین
     if (originalReceipt == nil) {
         return [@"Bypass_6902_Active" dataUsingEncoding:NSUTF8StringEncoding];
     }
@@ -310,7 +311,7 @@ static UIButton *floatingButton = nil;
     btn.tag = tag;
     [btn setTitle:title forState:UIControlStateNormal];
     [btn setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
-    [btn addTarget:action forControlEvents:UIControlEventTouchUpInside];
+    [btn addTarget:self action:action forControlEvents:UIControlEventTouchUpInside]; // 🛠️ لێرەدا self زیادکرا بۆ چارەسەری ئێرۆرەکە
     [buttonScrollView addSubview:btn];
 }
 
