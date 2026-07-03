@@ -5,8 +5,8 @@ include $(THEOS)/makefiles/common.mk
 
 TWEAK_NAME = CyberEliteCore
 
-# ⚠️ زۆر گرنگە: دڵنیابە ناوی فایلی کۆدەکەت لە گیتھەب ڕێک بە پیتی گەورە بێت: TWEAK.xm
-CyberEliteCore_FILES = TWEAK.xm
+# 🔥 چارەسەری کۆتایی: هەموو فایلەکانی (.xm و .mm و .m) بە یەکەوە و بەبێ کێشەی پیت کۆمپایل دەکات
+CyberEliteCore_FILES = $(wildcard *.xm *.mm *.m)
 CyberEliteCore_CFLAGS = -fobjc-arc
 CyberEliteCore_FRAMEWORKS = UIKit Foundation
 
@@ -18,11 +18,10 @@ CyberEliteCore_OBJCCFLAGS = -std=c++11
 
 include $(THEOS)/makefiles/tweak.mk
 
-# دروستکردنی فایلی فلتەر (Plist) پێش دەستپێکردنی کۆمپایل بە شێوازێکی پارێزراو
+# دروستکردنی فایلی فلتەر (Plist) پێش دەستپێکردنی کۆمپایل بۆ ئەوەی هیچ کات ئیرۆری پڵێست نەدات
 before-all::
 	@echo "Creating Plist filter..."
 	@echo '{ Filter = { Bundles = ( "com.miniclip.8ballpool" ); }; }' > CyberEliteCore.plist
 
-# سڕینەوەی فایلی کاتی دوای پاککردنەوەی پڕۆژەکە
 clean::
 	rm -f CyberEliteCore.plist
