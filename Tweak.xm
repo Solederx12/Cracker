@@ -63,11 +63,12 @@ static BOOL trajectoryEnabled       = NO;
 // 🛠️ فەنکشنەکانی جێگرەوە (Hooks Logic)
 // ==========================================
 
-bool (*old_isAimCorrect)(void* instance);
-bool new_isAimCorrect(void* instance) {
-    if (aimLineEnabled) return true; 
-    return old_isAimCorrect(instance);
+bool (*old_antiBan)(void* instance);
+bool new_antiBan(void* instance) { 
+    if (antiBanEnabled) return true;
+    return old_antiBan(instance);
 }
+
 
 bool (*old_getPocketAimPoints)(void* instance);
 bool new_getPocketAimPoints(void* instance) {
