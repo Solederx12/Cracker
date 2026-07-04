@@ -6,7 +6,8 @@ include $(THEOS)/makefiles/common.mk
 TWEAK_NAME = CyberEliteCore
 
 # 🔥 چارەسەری کۆتایی: هەموو فایلەکانی (.xm و .mm و .m) بە یەکەوە و بەبێ کێشەی پیت کۆمپایل دەکات
-CyberEliteCore_FILES = $(wildcard *.xm *.mm *.m)
+CyberEliteCore_FILES = Tweak.xm
+
 CyberEliteCore_CFLAGS = -fobjc-arc
 CyberEliteCore_FRAMEWORKS = UIKit Foundation
 
