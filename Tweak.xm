@@ -68,12 +68,11 @@ bool new_antiBan(void* instance) {
     if (antiBanEnabled) return true;
     return old_antiBan(instance);
 }
+
 bool (*old_isAimCorrect)(void* instance);
 bool new_isAimCorrect(void* instance) {
     return true; 
 }
-
-
 
 bool (*old_getPocketAimPoints)(void* instance);
 bool new_getPocketAimPoints(void* instance) {
@@ -151,13 +150,6 @@ bool new_wideLine(void* instance) {
     if (wideLineEnabled) return true;
     return old_wideLine(instance);
 }
-
-// ⚠️ ئەم پێنج دێڕە بە تەواوی بسڕەوە:
-bool (*old_antiBan)(void* instance);
-bool new_antiBan(void= instance) {
-    return old_antiBan(instance);
-}
-
 
 int (*old_getMaxBounces)(void* instance);
 int new_getMaxBounces(void* instance) {
@@ -319,7 +311,6 @@ static UIButton *floatingButton = nil;
     [btn setTitle:title forState:UIControlStateNormal];
     [btn setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
     
-    // 🛠️ گۆڕینی شێوازی بەستنەوە بۆ دوورکەوتنەوە لە هەر جۆرە ئێرۆرێکی کۆمپایلەر
     [btn addTarget:[self class] action:action forControlEvents:UIControlEventTouchUpInside];
     
     [buttonScrollView addSubview:btn];
