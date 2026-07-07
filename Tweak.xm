@@ -1,6 +1,7 @@
 #import <UIKit/UIKit.h>
 #import <mach-o/dyld.h>
 #include <objc/runtime.h>
+#import <libspector/spector.h>  // ✅ بەکارهێنانی libspector
 
 // ================================================================
 // 📌 ئۆفسێتەکان - ۱۰ ئۆفسێت پێویستە
@@ -37,17 +38,6 @@ static BOOL noFrictionEnabled  = NO;   // بێ-لێژایی
 // ================================================================
 static float lockedAngle = 0.785;   // ۴۵ پلە
 static float customPower = 0.8;
-
-// ================================================================
-// 🔧 پێناسەکردنی Dobby Hook
-// ================================================================
-#ifdef __cplusplus
-extern "C" {
-#endif
-    int DobbyHook(void *target, void *replace, void **origin);
-#ifdef __cplusplus
-}
-#endif
 
 // ================================================================
 // 🛠️ Hookە سەرەکییەکان
@@ -318,7 +308,7 @@ static UIButton *floatingBtn = nil;
 #pragma clang diagnostic pop
 
 // ================================================================
-// 🚀 لۆدبوونی مۆد
+// 🚀 لۆدبوونی مۆد (گۆڕدراو بۆ libspector)
 // ================================================================
 __attribute__((constructor)) static void initMod() {
     [[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationDidFinishLaunchingNotification
@@ -329,21 +319,25 @@ __attribute__((constructor)) static void initMod() {
             @try {
                 uintptr_t base = (uintptr_t)_dyld_get_image_header(0);
                 if (base) {
+                    // گۆڕینی هەموو DobbyHook بۆ spector_hook
                     if (OFFSET_AIM_EVENT != 0)
-                        DobbyHook((void *)(base + OFFSET_AIM_EVENT), (void *)new_aimEvent, (void **)&orig_aimEvent);
+                        spector_hook((void *)(base + OFFSET_AIM_EVENT), (void *)new_aimEvent, (void **)&orig_aimEvent);
                     if (OFFSET_ANTI_BAN != 0)
-                        DobbyHook((void *)(base + OFFSET_ANTI_BAN), (void *)new_antiBan, (void **)&orig_antiBan);
+                        spector_hook((void *)(base + OFFSET_ANTI_BAN), (void *)new_antiBan, (void **)&orig_antiBan);
                     if (OFFSET_AUTO_PLAY != 0)
-                        DobbyHook((void *)(base + OFFSET_AUTO_PLAY), (void *)new_autoPlay, (void **)&orig_autoPlay);
+                        spector_hook((void *)(base + OFFSET_AUTO_PLAY), (void *)new_autoPlay, (void **)&orig_autoPlay);
                     if (OFFSET_GAME_MANAGER != 0)
-                        DobbyHook((void *)(base + OFFSET_GAME_MANAGER), (void *)new_isAimCorrect, (void **)&orig_isAimCorrect);
+                        spector_hook((void *)(base + OFFSET_GAME_MANAGER), (void *)new_isAimCorrect, (void **)&orig_isAimCorrect);
                     if (OFFSET_BALL_SPEED != 0)
-                        DobbyHook((void *)(base + OFFSET_BALL_SPEED), (void *)new_getBallSpeed, (void **)&orig_getBallSpeed);
+                        spector_hook((void *)(base + OFFSET_BALL_SPEED), (void *)new_getBallSpeed, (void **)&orig_getBallSpeed);
                     if (OFFSET_SHOT_POWER != 0)
-                        DobbyHook((void *)(base + OFFSET_SHOT_POWER), (void *)new_getShotPower, (void **)&orig_getShotPower);
+                        spector_hook((void *)(base + OFFSET_SHOT_POWER), (void *)new_getShotPower, (void **)&orig_getShotPower);
                     if (OFFSET_TABLE_COLOR != 0)
-                        DobbyHook((void *)(base + OFFSET_TABLE_COLOR), (void *)new_setTableColor, (void **)&orig_setTableColor);
-                    NSLog(@"[EliteMod] ✅ Hooks installed!");
+                        spector_hook((void *)(base + OFFSET_TABLE_COLOR), (void *)new_setTableColor, (void **)&orig_setTableColor);
+                    // بۆ getFriction پێویستە هۆک بکرێت ئەگەر ئۆفسێتەکەت هەیە
+                    // spector_hook((void *)(base + OFFSET_FRICTION), (void *)new_getFriction, (void **)&orig_getFriction);
+                    
+                    NSLog(@"[EliteMod] ✅ Hooks installed with libspector!");
                 }
                 [SimpleMenu showMenu];
             } @catch (NSException *e) {
