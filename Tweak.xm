@@ -5,10 +5,10 @@
 // ====================================================================
 // 📌 ئۆفسێتەکان - پێویستە خۆت بدۆزیتەوە بۆ ڤێرشنی 56.26.1
 // ====================================================================
-#define OFFSET_AIM_LINE              0x0 // بگۆڕە بە ئۆفسێتی ڕاست
-#define OFFSET_CUE_POWER             0x0 // بگۆڕە بە ئۆفسێتی ڕاست
-#define OFFSET_GET_AIM_EVENT         0x0 // بگۆڕە بە ئۆفسێتی ڕاست
-#define OFFSET_ANTI_BAN              0x0 // بگۆڕە بە ئۆفسێتی ڕاست
+#define OFFSET_AIM_LINE              0x0 // بگۆڕە
+#define OFFSET_CUE_POWER             0x0
+#define OFFSET_GET_AIM_EVENT         0x0
+#define OFFSET_ANTI_BAN              0x0
 
 // ====================================================================
 // دۆخی دوگمەکان
@@ -28,64 +28,54 @@ extern "C" {
 #endif
 
 // ====================================================================
-// Hookەکان (بەبێ Logos، ڕاستەوخۆ بە Dobby)
+// Hookەکان
 // ====================================================================
-
-// فەنکشنە ڕەسەنەکان (پوچەڵ)
 bool (*orig_isAimCorrect)(void *instance);
 bool (*orig_antiBan)(void *instance);
 void* (*orig_getAimEvent)(void *instance);
 
-// فەنکشنی نوێ بۆ هێڵی ئامانج
 bool new_isAimCorrect(void *instance) {
     @try {
-        if (aimLineEnabled) {
-            return YES;
-        }
+        if (aimLineEnabled) return YES;
     } @catch (NSException *e) {
-        NSLog(@"[Mod] isAimCorrect error: %@", e);
+        NSLog(@"[Mod] isAimCorrect: %@", e);
     }
     return orig_isAimCorrect ? orig_isAimCorrect(instance) : YES;
 }
 
-// فەنکشنی نوێ بۆ ئەنتی بان
 bool new_antiBan(void *instance) {
     @try {
-        if (antiBanEnabled) {
-            return YES;
-        }
+        if (antiBanEnabled) return YES;
     } @catch (NSException *e) {
-        NSLog(@"[Mod] antiBan error: %@", e);
+        NSLog(@"[Mod] antiBan: %@", e);
     }
     return orig_antiBan ? orig_antiBan(instance) : YES;
 }
 
-// فەنکشنی نوێ بۆ ڕووداوی ئامانج (بۆ درێژکردنی هێڵ بەپێی قوەت)
 void* new_getAimEvent(void *instance) {
     @try {
         if (aimLineEnabled && instance != NULL) {
-            // نموونە: ئەم بەشە کاردەکات کاتێک ئۆفسێتەکان ڕاست بن
+            // کاتی ئۆفسێتەکان دۆزییەوە، ئەم بەشە چالاک بکە
             /*
-            float *powerPtr = (float *)((uintptr_t)instance + OFFSET_CUE_POWER);
-            float *linePtr  = (float *)((uintptr_t)instance + OFFSET_AIM_LINE);
-            if (powerPtr && linePtr) {
-                float power = *powerPtr;
-                *linePtr = 200.0 + (power * 400.0); // 200 بۆ 600
+            float *power = (float *)((uintptr_t)instance + OFFSET_CUE_POWER);
+            float *line  = (float *)((uintptr_t)instance + OFFSET_AIM_LINE);
+            if (power && line) {
+                *line = 200.0 + (*power * 400.0);
             }
             */
         }
     } @catch (NSException *e) {
-        NSLog(@"[Mod] getAimEvent error: %@", e);
+        NSLog(@"[Mod] getAimEvent: %@", e);
     }
-    if (orig_getAimEvent) {
-        return orig_getAimEvent(instance);
-    }
-    return NULL;
+    return orig_getAimEvent ? orig_getAimEvent(instance) : NULL;
 }
 
 // ====================================================================
-// 🖥️ مێنیووی مۆد (بە UI باشترکراو)
+// 🖥️ مێنیوو - بە پشتگوێخستنی ئاگادارییەکانی iOS 26
 // ====================================================================
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+
 @interface ModMenuWindow : UIWindow
 + (void)showMenu;
 @end
@@ -100,6 +90,7 @@ static UIButton *floatingBtn = nil;
     dispatch_async(dispatch_get_main_queue(), ^{
         @try {
             if (menuInstance) return;
+            // ئەم دوو هێڵە ئاگاداری دەردەکەن، بە پشتیوانی iOS 26
             menuInstance = [[ModMenuWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
             menuInstance.windowLevel = UIWindowLevelAlert + 1;
             menuInstance.backgroundColor = [UIColor clearColor];
@@ -193,8 +184,10 @@ static UIButton *floatingBtn = nil;
 
 @end
 
+#pragma clang diagnostic pop
+
 // ====================================================================
-// 🚀 لۆدبوونی مۆد
+// 🚀 لۆدبوون
 // ====================================================================
 __attribute__((constructor)) static void initMod() {
     [[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationDidFinishLaunchingNotification
