@@ -1,14 +1,14 @@
 #include <mach-o/dyld.h>
 #import <UIKit/UIKit.h>
+#import <objc/runtime.h>
 #include <string.h>
 
-// ====================================================================
-// 🛑 بێدەنگکردنی ئیرۆری وەشانە نوێیەکانی ئایۆئێس
-// ====================================================================
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
 
-// پێناسەکردنی فەنکشنی Dobby
+// ====================================================================
+// 🛠️ پێناسەکردنی Dobby Hook
+// ====================================================================
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -17,332 +17,226 @@ extern "C" {
 }
 #endif
 
-// ==========================================
-// 🎯 CYBER ELITE CORE - OFFSETS CONFIGURATION
+// ====================================================================
+// 📌 ئۆفسێتەکان - پێویستە خۆت بدۆزیتەوە بۆ ڤێرشنی 56.26.1
+// ====================================================================
+// ڕێنمایی: بە Cheat Engine یان Game Guardian بەدوای نرخەکاندا بگەڕێ
+#define OFFSET_AIM_LINE              0x0 // ئەمە بگۆڕە بە ئۆفسێتی ڕاست
+#define OFFSET_CUE_POWER             0x0 // شوێنی قوەتی دارەکە
+#define OFFSET_GET_AIM_EVENT         0x0 // فەنکشنی ڕووداوی ئامانج
+#define OFFSET_ANTI_BAN              0x0 // پاتچی ئەنتی بان
 
-// --- هێڵ و ئامانج (Aiming & Guidelines) ---
-#define OFFSET_AIM_LINE               0x2c138UL   
-#define OFFSET_FORCE_SHOW_GUIDELINE   0x11b488UL 
-#define OFFSET_WIDE_LINE              0x30c2fc0UL
-#define OFFSET_GET_AIM_POINT          0x8e35f8UL
-#define OFFSET_GET_AIM_ANGLE          0x1da9b0UL
-#define OFFSET_GET_AIM_TIME           0xbb0dd0UL
-#define OFFSET_GET_AIM_EVENT          0x1113d8UL
-#define OFFSET_CUE_BALL_TRAJECTORY    0x000000UL 
+// ====================================================================
+// 🕹️ دۆخی دوگمەکان
+// ====================================================================
+static BOOL aimLineEnabled = NO;
+static BOOL antiBanEnabled = NO;
 
-// --- تایبەتمەندی و یاریکردن (Game Features) ---
-#define OFFSET_POCKETS                0xec9ccUL   
-#define OFFSET_AUTOPLAY               0x1318ff4UL 
-#define OFFSET_TABLES                 0x118568UL  
-#define OFFSET_SETUP_CUE_BALL_RACK    0x6274ecUL
+// ====================================================================
+// 🛠️ Hookەکان بە پاراستن لە کڕاش
+// ====================================================================
 
-// --- پاراستن و پاتچە گشتییەکان (Security & Patches) ---
-#define OFFSET_GENERAL_PATCH_1        0x2a3da8UL 
-#define OFFSET_GENERAL_PATCH_2        0x2a3ee4UL 
-#define OFFSET_ANTI_BAN               0x2fdcaa0UL
-
-// ==========================================
-// 🕹️ دۆخی دوگمەکان (Booleans)
-// ==========================================
-static BOOL aimLineEnabled          = NO;
-static BOOL pocketsEnabled          = NO;
-static BOOL autoplayEnabled         = NO;
-static BOOL tablesEnabled          = NO;
-static BOOL customAimPointEnabled   = NO;
-static BOOL customAimAngleEnabled   = NO;
-static BOOL infinityAimTimeEnabled  = NO;
-static BOOL customRackEnabled       = NO;
-static BOOL customAimEventEnabled   = NO; 
-static BOOL generalPatchEnabled     = NO;
-static BOOL forceShowGuideEnabled   = NO;
-static BOOL wideLineEnabled         = NO;
-static BOOL antiBanEnabled          = NO;
-static BOOL trajectoryEnabled       = NO; 
-
-// ==========================================
-// 🛠️ فەنکشنەکانی جێگرەوە (Hooks Logic)
-// ==========================================
-
-bool (*old_antiBan)(void* instance);
-bool new_antiBan(void* instance) { 
-    if (antiBanEnabled) return true;
-    return old_antiBan(instance);
-}
-
+// --- فەنکشنی ئەسڵی کۆن ---
 bool (*old_isAimCorrect)(void* instance);
+bool (*old_antiBan)(void* instance);
+void* (*old_getAimEvent)(void* instance);
+
+// --- فەنکشنی نوێ بۆ هێڵی ئامانج ---
 bool new_isAimCorrect(void* instance) {
-    return true; 
+    @try {
+        if (aimLineEnabled) {
+            return YES;
+        }
+    } @catch (NSException *exception) {
+        NSLog(@"[Mod] Exception in new_isAimCorrect: %@", exception);
+    }
+    return old_isAimCorrect ? old_isAimCorrect(instance) : YES;
 }
 
-bool (*old_getPocketAimPoints)(void* instance);
-bool new_getPocketAimPoints(void* instance) {
-    if (pocketsEnabled) return true;
-    return old_getPocketAimPoints(instance);
+// --- فەنکشنی نوێ بۆ ئەنتی بان ---
+bool new_antiBan(void* instance) {
+    @try {
+        if (antiBanEnabled) {
+            return YES;
+        }
+    } @catch (NSException *exception) {
+        NSLog(@"[Mod] Exception in new_antiBan: %@", exception);
+    }
+    return old_antiBan ? old_antiBan(instance) : YES;
 }
 
-bool (*old_isAutoplayEnabled)(void* instance);
-bool new_isAutoplayEnabled(void* instance) {
-    if (autoplayEnabled) return true;
-    return old_isAutoplayEnabled(instance);
+// --- فەنکشنی نوێ بۆ ڕووداوی ئامانج (دەستکاری قوەت و هێڵ) ---
+void* new_getAimEvent(void* instance) {
+    @try {
+        if (aimLineEnabled && instance != NULL) {
+            // هەوڵبدە قوەتەکە بدۆزیتەوە (ئۆفسێتەکە پێویستە دروست بکرێت)
+            // ئاگادار: ئەمە تەنها نموونەیە، پێویستە ئۆفسێتی ڕاست دابنێیت
+            /*
+            float *powerPtr = (float *)((uintptr_t)instance + OFFSET_CUE_POWER);
+            if (powerPtr) {
+                float power = *powerPtr;
+                // درێژی هێڵەکە بەپێی قوەت دیاری بکە
+                float *linePtr = (float *)((uintptr_t)instance + OFFSET_AIM_LINE);
+                if (linePtr) {
+                    *linePtr = 200.0 + (power * 400.0);
+                }
+            }
+            */
+        }
+    } @catch (NSException *exception) {
+        NSLog(@"[Mod] Exception in new_getAimEvent: %@", exception);
+    }
+    // گەڕانەوەی فەنکشنی ڕەسەن
+    if (old_getAimEvent) {
+        return old_getAimEvent(instance);
+    }
+    return NULL;
 }
 
-bool (*old_tablesBypass)(void* instance);
-bool new_tablesBypass(void* instance) {
-    if (tablesEnabled) return true;
-    return old_tablesBypass(instance);
+// ====================================================================
+// 🔧 Method Swizzling بۆ پاتچی FBSDK (جێگرەوەی %hook)
+// ====================================================================
+static void SwizzleMethod(Class class, SEL originalSelector, SEL swizzledSelector) {
+    Method originalMethod = class_getInstanceMethod(class, originalSelector);
+    Method swizzledMethod = class_getInstanceMethod(class, swizzledSelector);
+    
+    if (!originalMethod || !swizzledMethod) return;
+    
+    BOOL didAddMethod = class_addMethod(class,
+                                        originalSelector,
+                                        method_getImplementation(swizzledMethod),
+                                        method_getTypeEncoding(swizzledMethod));
+    
+    if (didAddMethod) {
+        class_replaceMethod(class,
+                            swizzledSelector,
+                            method_getImplementation(originalMethod),
+                            method_getTypeEncoding(originalMethod));
+    } else {
+        method_exchangeImplementations(originalMethod, swizzledMethod);
+    }
 }
 
-void* (*old_getAimPoint)(void* instance, void* param1, void* param2, void* param3);
-void* new_getAimPoint(void* instance, void* param1, void* param2, void* param3) {
-    return old_getAimPoint(instance, param1, param2, param3);
-}
-
-double (*old_getAimAngleTarget)(void* instance, void* param2);
-double new_getAimAngleTarget(void* instance, void* param2) {
-    if (customAimAngleEnabled) return 0.0; 
-    return old_getAimAngleTarget(instance, param2);
-}
-
-double (*old_getAimTimePerShot)(void* instance, void* param2);
-double new_getAimTimePerShot(void* instance, void* param2) {
-    if (infinityAimTimeEnabled) return 9999.0; 
-    return old_getAimTimePerShot(instance, param2);
-}
-
-void (*old_setupCueBallRack)(void* instance, void* param2);
-void new_setupCueBallRack(void* instance, void* param2) {
-    old_setupCueBallRack(instance, param2);
-}
-
-void* (*old_getAimEvent)(void* instance, void* param1, void* param2, int param3);
-void* new_getAimEvent(void* instance, void* param1, void* param2, int param3) {
-    if (customAimPointEnabled && instance != NULL) {
-        float *cuePower = (float *)((uintptr_t)instance + 0x64); 
-        if (cuePower && *cuePower > 0.05f) {
-            trajectoryEnabled = YES;
-        } else {
-            trajectoryEnabled = NO;
+// فەنکشنی نوێ بۆ fetchDeviceReceipt
+static id new_fetchDeviceReceipt(id self, SEL _cmd) {
+    // بانگی فەنکشنی ڕەسەن
+    SEL origSel = @selector(orig_fetchDeviceReceipt);
+    Method origMethod = class_getInstanceMethod([self class], origSel);
+    if (origMethod) {
+        id (*origImp)(id, SEL) = (id (*)(id, SEL))method_getImplementation(origMethod);
+        if (origImp) {
+            id result = origImp(self, origSel);
+            if (result) return result;
         }
     }
-    return old_getAimEvent(instance, param1, param2, param3);
-}
-
-bool (*old_generalPatch1)(void* instance);
-bool new_generalPatch1(void* instance) {
-    if (generalPatchEnabled) return true;
-    return old_generalPatch1(instance);
-}
-
-bool (*old_generalPatch2)(void* instance);
-bool new_generalPatch2(void* instance) {
-    if (generalPatchEnabled) return true;
-    return old_generalPatch2(instance);
-}
-
-bool (*old_forceShowGuideline)(void* instance);
-bool new_forceShowGuideline(void* instance) {
-    if (forceShowGuideEnabled) return true;
-    return old_forceShowGuideline(instance);
-}
-
-bool (*old_wideLine)(void* instance);
-bool new_wideLine(void* instance) {
-    if (wideLineEnabled) return true;
-    return old_wideLine(instance);
-}
-
-int (*old_getMaxBounces)(void* instance);
-int new_getMaxBounces(void* instance) {
-    if (customAimPointEnabled) {
-        return 5;
-    }
-    return old_getMaxBounces ? old_getMaxBounces(instance) : 1;
-}
-
-bool (*old_showCueBallTrajectory)(void* instance);
-bool new_showCueBallTrajectory(void* instance) {
-    if (customAimPointEnabled) {
-        return trajectoryEnabled; 
-    }
-    return old_showCueBallTrajectory(instance);
+    // گەڕانەوەی بەهای دەستکرد
+    return [@"Bypass_6902_Active" dataUsingEncoding:NSUTF8StringEncoding];
 }
 
 // ====================================================================
-// 🛠️ پاتچی پڕۆفیشناڵی کێشەی 6902 (Sideload / Receipt Bypass)
-// ====================================================================
-@interface FBSDKPaymentProductRequestor : NSObject
-- (id)fetchDeviceReceipt;
-+ (id)fetchDeviceReceipt;
-@end
-
-%hook FBSDKPaymentProductRequestor
-- (id)fetchDeviceReceipt {
-    id originalReceipt = %orig;
-    if (originalReceipt == nil) {
-        return [@"Bypass_6902_Active" dataUsingEncoding:NSUTF8StringEncoding];
-    }
-    return originalReceipt;
-}
-+ (id)fetchDeviceReceipt {
-    id originalReceipt = %orig;
-    if (originalReceipt == nil) {
-        return [@"Bypass_6902_Active" dataUsingEncoding:NSUTF8StringEncoding];
-    }
-    return originalReceipt;
-}
-%end
-
-
-// ====================================================================
-//  ڕووکاری بەکارهێنەر (Mod Menu Interface)
+// 🖥️ مێنیووی مۆد (بە UI باشترکراو)
 // ====================================================================
 @interface ModMenuWindow : UIWindow
 + (void)showMenu;
-+ (void)createButtonWithTitle:(NSString *)title tag:(NSInteger)tag yPos:(CGFloat)y action:(SEL)action;
-+ (void)toggleAim:(UIButton *)sender;
-+ (void)togglePockets:(UIButton *)sender;
-+ (void)toggleAutoplay:(UIButton *)sender;
-+ (void)toggleTables:(UIButton *)sender;
-+ (void)toggleAimPoint:(UIButton *)sender;
-+ (void)toggleAimAngle:(UIButton *)sender;
-+ (void)toggleAimTime:(UIButton *)sender;
-+ (void)toggleRack:(UIButton *)sender;
-+ (void)toggleAimEvent:(UIButton *)sender;
-+ (void)toggleAntiBan:(UIButton *)sender;
-+ (void)toggleWideLine:(UIButton *)sender;
-+ (void)toggleForceGuide:(UIButton *)sender;
-+ (void)toggleGeneralPatch:(UIButton *)sender;
-+ (void)hideMenu;
-+ (void)completelyHideMenu; 
-+ (void)showFromFloating;
-+ (void)dragButton:(UIPanGestureRecognizer *)gesture;
 @end
 
 @implementation ModMenuWindow
+
 static ModMenuWindow *menuInstance = nil;
 static UIView *mainMenuView = nil;
-static UIScrollView *buttonScrollView = nil;
 static UIButton *floatingButton = nil;
 
 + (void)showMenu {
     dispatch_async(dispatch_get_main_queue(), ^{
-        if (!menuInstance) {
-            menuInstance = [[ModMenuWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
-            menuInstance.windowLevel = UIWindowLevelStatusBar + 1000.0;
-            menuInstance.backgroundColor = [UIColor clearColor];
-            menuInstance.userInteractionEnabled = YES;
-            menuInstance.hidden = NO;
-            
-            mainMenuView = [[UIView alloc] initWithFrame:CGRectMake(60, 80, 250, 480)];
-            mainMenuView.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.95];
-            mainMenuView.layer.cornerRadius = 16;
-            mainMenuView.layer.borderWidth = 2;
-            mainMenuView.layer.borderColor = [UIColor purpleColor].CGColor;
-            [menuInstance addSubview:mainMenuView];
-            
-            UILabel *titleLabel = [[UILabel alloc] initWithFrame:CGRectMake(10, 15, 230, 35)];
-            titleLabel.text = @"🎱 80p Kurdish Menu V4";
-            titleLabel.textColor = [UIColor whiteColor];
-            titleLabel.textAlignment = NSTextAlignmentCenter;
-            titleLabel.font = [UIFont boldSystemFontOfSize:18];
-            [mainMenuView addSubview:titleLabel];
-            
-            buttonScrollView = [[UIScrollView alloc] initWithFrame:CGRectMake(5, 60, 240, 310)];
-            buttonScrollView.contentSize = CGSizeMake(240, 720); 
-            buttonScrollView.showsVerticalScrollIndicator = YES;
-            [mainMenuView addSubview:buttonScrollView];
-            
-            [self createButtonWithTitle:@"دەرکەوتنی خەت: OFF" tag:1 yPos:5 action:@selector(toggleAim:)];
-            [self createButtonWithTitle:@"کونی ساحەکان: OFF" tag:2 yPos:55 action:@selector(togglePockets:)];
-            [self createButtonWithTitle:@"ئەوتۆ پلەی: OFF" tag:3 yPos:105 action:@selector(toggleAutoplay:)];
-            [self createButtonWithTitle:@"ساحەکان: OFF" tag:4 yPos:155 action:@selector(toggleTables:)];
-            [self createButtonWithTitle:@"ڕێڕەوی داینامیکی قوەت: OFF" tag:5 yPos:205 action:@selector(toggleAimPoint:)];
-            [self createButtonWithTitle:@"گۆشەی ئامانج: OFF" tag:6 yPos:255 action:@selector(toggleAimAngle:)];
-            [self createButtonWithTitle:@"کاتی بێکۆتایی: OFF" tag:7 yPos:305 action:@selector(toggleAimTime:)];
-            [self createButtonWithTitle:@"ڕێکخستنی تۆپ: OFF" tag:8 yPos:355 action:@selector(toggleRack:)];
-            [self createButtonWithTitle:@"کۆنترۆڵی لێدان: OFF" tag:9 yPos:405 action:@selector(toggleAimEvent:)]; 
-            [self createButtonWithTitle:@"ئەنتی بان (Anti-Ban): OFF" tag:10 yPos:455 action:@selector(toggleAntiBan:)]; 
-            [self createButtonWithTitle:@"هێڵی پان (Wide Line): OFF" tag:11 yPos:505 action:@selector(toggleWideLine:)]; 
-            [self createButtonWithTitle:@"دەرخستنی زۆرەملێ: OFF" tag:12 yPos:555 action:@selector(toggleForceGuide:)]; 
-            [self createButtonWithTitle:@"پاتچی گشتی: OFF" tag:13 yPos:605 action:@selector(toggleGeneralPatch:)]; 
-            
-            UIButton *closeBtn = [UIButton buttonWithType:UIButtonTypeSystem];
-            closeBtn.frame = CGRectMake(10, 385, 110, 40);
-            closeBtn.backgroundColor = [UIColor orangeColor];
-            closeBtn.layer.cornerRadius = 8;
-            [closeBtn setTitle:@"داخستنی کاتی" forState:UIControlStateNormal];
-            [closeBtn setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
-            closeBtn.titleLabel.font = [UIFont systemFontOfSize:13];
-            [closeBtn addTarget:self action:@selector(hideMenu) forControlEvents:UIControlEventTouchUpInside];
-            [mainMenuView addSubview:closeBtn];
-            
-            UIButton *destroyBtn = [UIButton buttonWithType:UIButtonTypeSystem];
-            destroyBtn.frame = CGRectMake(130, 385, 110, 40);
-            destroyBtn.backgroundColor = [UIColor redColor];
-            destroyBtn.layer.cornerRadius = 8;
-            [destroyBtn setTitle:@"شاردنەوەی تەواو" forState:UIControlStateNormal];
-            [destroyBtn setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
-            destroyBtn.titleLabel.font = [UIFont systemFontOfSize:13];
-            [destroyBtn addTarget:self action:@selector(completelyHideMenu) forControlEvents:UIControlEventTouchUpInside];
-            [mainMenuView addSubview:destroyBtn];
-            
-            floatingButton = [UIButton buttonWithType:UIButtonTypeSystem];
-            floatingButton.frame = CGRectMake(15, 120, 55, 55);
-            floatingButton.backgroundColor = [UIColor purpleColor];
-            floatingButton.layer.cornerRadius = 27.5;
-            [floatingButton setTitle:@"80p" forState:UIControlStateNormal];
-            [floatingButton setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
-            [floatingButton addTarget:self action:@selector(showFromFloating) forControlEvents:UIControlEventTouchUpInside];
-            
-            UIPanGestureRecognizer *panGesture = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(dragButton:)];
-            [floatingButton addGestureRecognizer:panGesture];
-            [menuInstance addSubview:floatingButton];
-            floatingButton.hidden = YES;
+        @try {
+            if (!menuInstance) {
+                menuInstance = [[ModMenuWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
+                menuInstance.windowLevel = UIWindowLevelAlert + 1;
+                menuInstance.backgroundColor = [UIColor clearColor];
+                menuInstance.userInteractionEnabled = YES;
+                menuInstance.hidden = NO;
+                
+                // مێنیووی سەرەکی
+                mainMenuView = [[UIView alloc] initWithFrame:CGRectMake(60, 100, 250, 220)];
+                mainMenuView.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.92];
+                mainMenuView.layer.cornerRadius = 16;
+                mainMenuView.layer.borderWidth = 2;
+                mainMenuView.layer.borderColor = [UIColor purpleColor].CGColor;
+                [menuInstance addSubview:mainMenuView];
+                
+                // ناونیشان
+                UILabel *titleLabel = [[UILabel alloc] initWithFrame:CGRectMake(10, 15, 230, 30)];
+                titleLabel.text = @"🎱 8BP Mod V5";
+                titleLabel.textColor = [UIColor whiteColor];
+                titleLabel.textAlignment = NSTextAlignmentCenter;
+                titleLabel.font = [UIFont boldSystemFontOfSize:18];
+                [mainMenuView addSubview:titleLabel];
+                
+                // دوگمەی هێڵی ئامانج
+                UIButton *aimBtn = [UIButton buttonWithType:UIButtonTypeSystem];
+                aimBtn.frame = CGRectMake(20, 60, 210, 45);
+                aimBtn.backgroundColor = [UIColor grayColor];
+                aimBtn.layer.cornerRadius = 8;
+                aimBtn.tag = 1;
+                [aimBtn setTitle:@"🔴 هێڵی ئامانج: OFF" forState:UIControlStateNormal];
+                [aimBtn setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+                [aimBtn addTarget:self action:@selector(toggleAim:) forControlEvents:UIControlEventTouchUpInside];
+                [mainMenuView addSubview:aimBtn];
+                
+                // دوگمەی ئەنتی بان
+                UIButton *antiBanBtn = [UIButton buttonWithType:UIButtonTypeSystem];
+                antiBanBtn.frame = CGRectMake(20, 115, 210, 45);
+                antiBanBtn.backgroundColor = [UIColor grayColor];
+                antiBanBtn.layer.cornerRadius = 8;
+                antiBanBtn.tag = 2;
+                [antiBanBtn setTitle:@"🔴 ئەنتی بان: OFF" forState:UIControlStateNormal];
+                [antiBanBtn setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+                [antiBanBtn addTarget:self action:@selector(toggleAntiBan:) forControlEvents:UIControlEventTouchUpInside];
+                [mainMenuView addSubview:antiBanBtn];
+                
+                // دوگمەی داخستن
+                UIButton *closeBtn = [UIButton buttonWithType:UIButtonTypeSystem];
+                closeBtn.frame = CGRectMake(60, 170, 130, 35);
+                closeBtn.backgroundColor = [UIColor redColor];
+                closeBtn.layer.cornerRadius = 8;
+                [closeBtn setTitle:@"داخستن" forState:UIControlStateNormal];
+                [closeBtn setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+                [closeBtn addTarget:self action:@selector(hideMenu) forControlEvents:UIControlEventTouchUpInside];
+                [mainMenuView addSubview:closeBtn];
+                
+                // دوگمەی شناور (Floating)
+                floatingButton = [UIButton buttonWithType:UIButtonTypeSystem];
+                floatingButton.frame = CGRectMake(20, 150, 55, 55);
+                floatingButton.backgroundColor = [UIColor purpleColor];
+                floatingButton.layer.cornerRadius = 27.5;
+                [floatingButton setTitle:@"🎱" forState:UIControlStateNormal];
+                [floatingButton setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+                [floatingButton addTarget:self action:@selector(showFromFloating) forControlEvents:UIControlEventTouchUpInside];
+                [menuInstance addSubview:floatingButton];
+                floatingButton.hidden = YES;
+            }
+        } @catch (NSException *exception) {
+            NSLog(@"[Mod] Exception in showMenu: %@", exception);
         }
     });
 }
 
-+ (void)createButtonWithTitle:(NSString *)title tag:(NSInteger)tag yPos:(CGFloat)y action:(SEL)action {
-    UIButton *btn = [UIButton buttonWithType:UIButtonTypeSystem];
-    btn.frame = CGRectMake(15, y, 210, 45);
-    btn.backgroundColor = [UIColor grayColor];
-    btn.layer.cornerRadius = 8;
-    btn.tag = tag;
-    [btn setTitle:title forState:UIControlStateNormal];
-    [btn setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
-    
-    [btn addTarget:[self class] action:action forControlEvents:UIControlEventTouchUpInside];
-    
-    [buttonScrollView addSubview:btn];
+// --- کارەکانی دوگمەکان ---
++ (void)toggleAim:(UIButton *)sender {
+    aimLineEnabled = !aimLineEnabled;
+    sender.backgroundColor = aimLineEnabled ? [UIColor greenColor] : [UIColor grayColor];
+    [sender setTitle:aimLineEnabled ? @"🟢 هێڵی ئامانج: ON" : @"🔴 هێڵی ئامانج: OFF" forState:UIControlStateNormal];
 }
 
-+ (void)toggleAimPoint:(UIButton *)sender { 
-    customAimPointEnabled = !customAimPointEnabled; 
-    sender.backgroundColor = customAimPointEnabled ? [UIColor greenColor] : [UIColor grayColor]; 
-    [sender setTitle:customAimPointEnabled ? @"ڕێڕەوی داینامیکی قوەت: ON" : @"ڕێڕەوی داینامیکی قوەت: OFF" forState:UIControlStateNormal]; 
++ (void)toggleAntiBan:(UIButton *)sender {
+    antiBanEnabled = !antiBanEnabled;
+    sender.backgroundColor = antiBanEnabled ? [UIColor greenColor] : [UIColor grayColor];
+    [sender setTitle:antiBanEnabled ? @"🟢 ئەنتی بان: ON" : @"🔴 ئەنتی بان: OFF" forState:UIControlStateNormal];
 }
-
-+ (void)toggleAim:(UIButton *)sender { aimLineEnabled = !aimLineEnabled; sender.backgroundColor = aimLineEnabled ? [UIColor greenColor] : [UIColor grayColor]; [sender setTitle:aimLineEnabled ? @"دەرکەوتنی خەت: ON" : @"دەرکەوتنی خەت: OFF" forState:UIControlStateNormal]; }
-+ (void)togglePockets:(UIButton *)sender { pocketsEnabled = !pocketsEnabled; sender.backgroundColor = pocketsEnabled ? [UIColor greenColor] : [UIColor grayColor]; [sender setTitle:pocketsEnabled ? @"کونی ساحەکان: ON" : @"کونی ساحەکان: OFF" forState:UIControlStateNormal]; }
-+ (void)toggleAutoplay:(UIButton *)sender { autoplayEnabled = !autoplayEnabled; sender.backgroundColor = autoplayEnabled ? [UIColor greenColor] : [UIColor grayColor]; [sender setTitle:autoplayEnabled ? @"ئەوتۆ پلەی: ON" : @"ئەوتۆ پلەی: OFF" forState:UIControlStateNormal]; }
-+ (void)toggleTables:(UIButton *)sender { tablesEnabled = !tablesEnabled; sender.backgroundColor = tablesEnabled ? [UIColor greenColor] : [UIColor grayColor]; [sender setTitle:tablesEnabled ? @"ساحەکان: ON" : @"ساحەکان: OFF" forState:UIControlStateNormal]; }
-+ (void)toggleAimAngle:(UIButton *)sender { customAimAngleEnabled = !customAimAngleEnabled; sender.backgroundColor = customAimAngleEnabled ? [UIColor greenColor] : [UIColor grayColor]; [sender setTitle:customAimAngleEnabled ? @"گۆشەی ئامانج: ON" : @"گۆشەی ئامانج: OFF" forState:UIControlStateNormal]; }
-+ (void)toggleAimTime:(UIButton *)sender { infinityAimTimeEnabled = !infinityAimTimeEnabled; sender.backgroundColor = infinityAimTimeEnabled ? [UIColor greenColor] : [UIColor grayColor]; [sender setTitle:infinityAimTimeEnabled ? @"کاتی بێکۆتایی: ON" : @"کاتی بێکۆتایی: OFF" forState:UIControlStateNormal]; }
-+ (void)toggleRack:(UIButton *)sender { customRackEnabled = !customRackEnabled; sender.backgroundColor = customRackEnabled ? [UIColor greenColor] : [UIColor grayColor]; [sender setTitle:customRackEnabled ? @"ڕێکخستنی تۆپ: ON" : @"ڕێکخستنی تۆپ: OFF" forState:UIControlStateNormal]; }
-+ (void)toggleAimEvent:(UIButton *)sender { customAimEventEnabled = !customAimEventEnabled; sender.backgroundColor = customAimEventEnabled ? [UIColor greenColor] : [UIColor grayColor]; [sender setTitle:customAimEventEnabled ? @"کۆنترۆڵی لێدان: ON" : @"کۆنترۆڵی لێدان: OFF" forState:UIControlStateNormal]; }
-+ (void)toggleAntiBan:(UIButton *)sender { antiBanEnabled = !antiBanEnabled; sender.backgroundColor = antiBanEnabled ? [UIColor greenColor] : [UIColor grayColor]; [sender setTitle:antiBanEnabled ? @"ئەنتی بان (Anti-Ban): ON" : @"ئەنتی بان (Anti-Ban): OFF" forState:UIControlStateNormal]; }
-+ (void)toggleWideLine:(UIButton *)sender { wideLineEnabled = !wideLineEnabled; sender.backgroundColor = wideLineEnabled ? [UIColor greenColor] : [UIColor grayColor]; [sender setTitle:wideLineEnabled ? @"هێڵی پان (Wide Line): ON" : @"هێڵی پان (Wide Line): OFF" forState:UIControlStateNormal]; }
-+ (void)toggleForceGuide:(UIButton *)sender { forceShowGuideEnabled = !forceShowGuideEnabled; sender.backgroundColor = forceShowGuideEnabled ? [UIColor greenColor] : [UIColor grayColor]; [sender setTitle:forceShowGuideEnabled ? @"دەرخستنی زۆرەملێ: ON" : @"دەرخستنی زۆرەملێ: OFF" forState:UIControlStateNormal]; }
-+ (void)toggleGeneralPatch:(UIButton *)sender { generalPatchEnabled = !generalPatchEnabled; sender.backgroundColor = generalPatchEnabled ? [UIColor greenColor] : [UIColor grayColor]; [sender setTitle:generalPatchEnabled ? @"پاتچی گشتی: ON" : @"پاتچی گشتی: OFF" forState:UIControlStateNormal]; }
 
 + (void)hideMenu {
     if (mainMenuView) mainMenuView.hidden = YES;
     if (floatingButton) floatingButton.hidden = NO;
-}
-
-+ (void)completelyHideMenu {
-    if (mainMenuView) mainMenuView.hidden = YES;
-    if (floatingButton) floatingButton.hidden = YES;
 }
 
 + (void)showFromFloating {
@@ -350,67 +244,64 @@ static UIButton *floatingButton = nil;
     if (floatingButton) floatingButton.hidden = YES;
 }
 
-+ (void)dragButton:(UIPanGestureRecognizer *)gesture {
-    if (!menuInstance || !gesture.view) return;
-    CGPoint translation = [gesture translationInView:menuInstance];
-    gesture.view.center = CGPointMake(gesture.view.center.x + translation.x, gesture.view.center.y + translation.y);
-    [gesture setTranslation:CGPointZero inView:menuInstance];
-}
-
-- (BOOL)canBecomeFirstResponder {
-    return YES;
-}
-
-- (void)motionEnded:(UIEventSubtype)motion withEvent:(UIEvent *)event {
-    if (motion == UIEventSubtypeMotionShake) {
-        dispatch_async(dispatch_get_main_queue(), ^{
-            if (floatingButton && floatingButton.hidden && mainMenuView.hidden) {
-                floatingButton.hidden = NO; 
-            }
-        });
-    }
-}
-
+- (BOOL)canBecomeFirstResponder { return YES; }
 - (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event {
     UIView *view = [super hitTest:point withEvent:event];
     return (view == self) ? nil : view;
 }
+
 @end
 
-// ==========================================
-// 🚀 لۆدبوونی ئۆتۆماتیکی هوکەکان
-// ==========================================
+// ====================================================================
+// 🚀 لۆدبوونی مۆد (بە پاراستن)
+// ====================================================================
 __attribute__((constructor)) static void initMod() {
-    [[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationDidFinishLaunchingNotification
-                                                      object:nil
-                                                       queue:[NSOperationQueue mainQueue]
-                                                  usingBlock:^(NSNotification * _Nonnull note) {
-        
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(3.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+    @try {
+        [[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationDidFinishLaunchingNotification
+                                                          object:nil
+                                                           queue:[NSOperationQueue mainQueue]
+                                                      usingBlock:^(NSNotification * _Nonnull note) {
             
-            uintptr_t baseAddress = (uintptr_t)_dyld_get_image_header(0); 
-            
-            if (baseAddress) {
-                DobbyHook((void *)(baseAddress + OFFSET_AIM_LINE), (void *)(uintptr_t)new_isAimCorrect, (void **)(uintptr_t)&old_isAimCorrect);
-                DobbyHook((void *)(baseAddress + OFFSET_POCKETS), (void *)(uintptr_t)new_getPocketAimPoints, (void **)(uintptr_t)&old_getPocketAimPoints);
-                DobbyHook((void *)(baseAddress + OFFSET_AUTOPLAY), (void *)(uintptr_t)new_isAutoplayEnabled, (void **)(uintptr_t)&old_isAutoplayEnabled);
-                DobbyHook((void *)(baseAddress + OFFSET_TABLES), (void *)(uintptr_t)new_tablesBypass, (void **)(uintptr_t)&old_tablesBypass);
-                DobbyHook((void *)(baseAddress + OFFSET_GET_AIM_POINT), (void *)(uintptr_t)new_getAimPoint, (void **)(uintptr_t)&old_getAimPoint);
-                DobbyHook((void *)(baseAddress + OFFSET_GET_AIM_ANGLE), (void *)(uintptr_t)new_getAimAngleTarget, (void **)(uintptr_t)&old_getAimAngleTarget);
-                DobbyHook((void *)(baseAddress + OFFSET_GET_AIM_TIME), (void *)(uintptr_t)new_getAimTimePerShot, (void **)(uintptr_t)&old_getAimTimePerShot);
-                DobbyHook((void *)(baseAddress + OFFSET_SETUP_CUE_BALL_RACK), (void *)(uintptr_t)new_setupCueBallRack, (void **)(uintptr_t)&old_setupCueBallRack);
-                DobbyHook((void *)(baseAddress + OFFSET_GET_AIM_EVENT), (void *)(uintptr_t)new_getAimEvent, (void **)(uintptr_t)&old_getAimEvent);
-
-                DobbyHook((void *)(baseAddress + OFFSET_GENERAL_PATCH_1), (void *)(uintptr_t)new_generalPatch1, (void **)(uintptr_t)&old_generalPatch1);
-                DobbyHook((void *)(baseAddress + OFFSET_GENERAL_PATCH_2), (void *)(uintptr_t)new_generalPatch2, (void **)(uintptr_t)&old_generalPatch2);
-                DobbyHook((void *)(baseAddress + OFFSET_FORCE_SHOW_GUIDELINE), (void *)(uintptr_t)new_forceShowGuideline, (void **)(uintptr_t)&old_forceShowGuideline);
-                DobbyHook((void *)(baseAddress + OFFSET_WIDE_LINE), (void *)(uintptr_t)new_wideLine, (void **)(uintptr_t)&old_wideLine);
-                DobbyHook((void *)(baseAddress + OFFSET_ANTI_BAN), (void *)(uintptr_t)new_antiBan, (void **)(uintptr_t)&old_antiBan);
-                DobbyHook((void *)(baseAddress + OFFSET_CUE_BALL_TRAJECTORY), (void *)(uintptr_t)new_showCueBallTrajectory, (void **)(uintptr_t)&old_showCueBallTrajectory);
-            }
-            [ModMenuWindow showMenu];
-        });
-    }];
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(5.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+                @try {
+                    uintptr_t baseAddress = (uintptr_t)_dyld_get_image_header(0);
+                    
+                    if (baseAddress && OFFSET_AIM_LINE != 0) {
+                        // تەنها ئەگەر ئۆفسێتەکان دیاری کرابوون Hook بکە
+                        DobbyHook((void *)(baseAddress + OFFSET_AIM_LINE), (void *)new_isAimCorrect, (void **)&old_isAimCorrect);
+                        DobbyHook((void *)(baseAddress + OFFSET_GET_AIM_EVENT), (void *)new_getAimEvent, (void **)&old_getAimEvent);
+                        DobbyHook((void *)(baseAddress + OFFSET_ANTI_BAN), (void *)new_antiBan, (void **)&old_antiBan);
+                    }
+                    
+                    // Method Swizzling بۆ پاتچی FBSDK
+                    @try {
+                        Class fbClass = NSClassFromString(@"FBSDKPaymentProductRequestor");
+                        if (fbClass) {
+                            SEL origSel = @selector(fetchDeviceReceipt);
+                            SEL newSel = @selector(new_fetchDeviceReceipt);
+                            // فەنکشنی نوێ زیاد بکە
+                            class_addMethod(fbClass, newSel, (IMP)new_fetchDeviceReceipt, "@@:");
+                            // گۆڕینی جێبەجێکردن
+                            Method origMethod = class_getInstanceMethod(fbClass, origSel);
+                            Method newMethod = class_getInstanceMethod(fbClass, newSel);
+                            if (origMethod && newMethod) {
+                                method_exchangeImplementations(origMethod, newMethod);
+                            }
+                        }
+                    } @catch (NSException *e) {
+                        NSLog(@"[Mod] FBSDK Swizzle failed: %@", e);
+                    }
+                    
+                    [ModMenuWindow showMenu];
+                    
+                } @catch (NSException *exception) {
+                    NSLog(@"[Mod] Exception in init block: %@", exception);
+                }
+            });
+        }];
+    } @catch (NSException *exception) {
+        NSLog(@"[Mod] Exception in initMod: %@", exception);
+    }
 }
 
 #pragma clang diagnostic pop
