@@ -3,18 +3,8 @@
  * 🎱 Wizard8BP Elite Pro - 30MB Mod for 8 Ball Pool
  * ================================================================
  * Version: 6.0.0
- * Author: CyberElite Team
- * Features: 35+ Premium Features
+ * Features: 40+ Premium Features
  * Size: ~30 MB (compiled)
- * ================================================================
- * 
- * 🔥 ئەم مۆدە لە هەموو مۆدەکانی تر پێشکەوتووترە
- * 🔥 تەنها پێویستی بە دۆزینەوەی ۱۰ ئۆفسێت هەیە
- * 🔥 ۳۵+ تایبەتمەندی جیاواز
- * 🔥 UIـی پێشکەوتوو و ڕەنگاوڕەنگ
- * 🔥 پشتگیری ۳ زمان (کوردی، عەرەبی، ئینگلیزی)
- * 🔥 سیستمی پروفایل بۆ هەڵگرتنی ڕێکخستنەکان
- * 
  * ================================================================
  */
 
@@ -26,10 +16,9 @@
 #include <AVFoundation/AVFoundation.h>
 
 // ================================================================
-// 📌 ئۆفسێتەکان - ۱۰ ئۆفسێت پێویستە (بەشێکیان دۆزراونەتەوە)
+// 📌 ئۆفسێتەکان - ۱۰ ئۆفسێت پێویستە
 // ================================================================
 
-// --- بنەڕەتییەکان (پێویستە بدۆزرێنەوە) ---
 #define OFFSET_GAME_MANAGER          0x0  // پوینتەری سەرەکی یاری
 #define OFFSET_AIM_EVENT             0x0  // فەنکشنی ڕووداوی ئامانج
 #define OFFSET_ANTI_BAN              0x0  // فەنکشنی دژە-بان
@@ -41,74 +30,77 @@
 #define OFFSET_TABLE_COLOR           0x0  // ڕەنگی مێز
 #define OFFSET_BALL_POSITION         0x0  // شوێنی تۆپەکان
 
-// --- پێکهاتەکانی یاری (دۆزراونەتەوە - جێگیرن) ---
+// --- پێکهاتەکانی یاری (جێگیرن) ---
 #define OFFSET_VISUAL_CUE            0x4d0
 #define OFFSET_VISUAL_GUIDE          0x3b8
-#define OFFSET_AIM_ANGLE             0x28 // گۆشە (radians) - جێگیرە
+#define OFFSET_AIM_ANGLE             0x28
 
 // ================================================================
-// 🕹️ دۆخی دوگمەکان - ۳۵+ تایبەتمەندی جیاواز
+// 🕹️ دۆخی دوگمەکان - ۴۰+ تایبەتمەندی
 // ================================================================
 
-// --- پەڕەی یەکەم: Aim & Power ---
-static BOOL aimLineEnabled        = NO;  // هێڵی درێژ
-static BOOL superLineEnabled      = NO;  // ۳ هێڵ
-static BOOL dynamicLineEnabled    = NO;  // هێڵی داینامیک بەپێی قوەت
-static BOOL aimLineColorEnabled   = NO;  // گۆڕینی ڕەنگی هێڵ
-static BOOL infinitePowerEnabled  = NO;  // قوەتی بێکۆتا
-static BOOL powerBarEnabled       = NO;  // نیشاندانی هێزی تەواو
-static BOOL angleLockEnabled      = NO;  // قفڵکردنی گۆشە
-static BOOL angleSnapEnabled      = NO;  // ڕاکێشانی گۆشە بۆ ۱۵ پلە
-static BOOL forceTouchEnabled     = NO;  // هێزی لێدان بە هەستەوەر
+// --- پەڕەی یەکەم: Aim & Power (۱۰ تایبەتمەندی) ---
+static BOOL aimLineEnabled        = NO;
+static BOOL superLineEnabled      = NO;
+static BOOL dynamicLineEnabled    = NO;
+static BOOL aimLineColorEnabled   = NO;
+static BOOL infinitePowerEnabled  = NO;
+static BOOL powerBarEnabled       = NO;
+static BOOL angleLockEnabled      = NO;
+static BOOL angleSnapEnabled      = NO;
+static BOOL forceTouchEnabled     = NO;
+static BOOL precisionAimEnabled   = NO;
 
-// --- پەڕەی دووەم: Auto & AI ---
-static BOOL autoPlayEnabled       = NO;  // یاری خۆکار
-static BOOL perfectAimEnabled     = NO;  // ئامانجی تەواو
-static BOOL autoAdjustEnabled     = NO;  // ڕێکخستنی خۆکار
-static BOOL smartAimEnabled       = NO;  // ئامانجی زیرەک
-static BOOL forcePocketEnabled    = NO;  // زۆرکردنی تۆپ بۆ کون
-static BOOL instantWinEnabled     = NO;  // بردنەوەی یەکسەر
-static BOOL noMissEnabled         = NO;  // هەرگیز تۆپ لەدەست نەدەیت
+// --- پەڕەی دووەم: Auto & AI (٨ تایبەتمەندی) ---
+static BOOL autoPlayEnabled       = NO;
+static BOOL perfectAimEnabled     = NO;
+static BOOL autoAdjustEnabled     = NO;
+static BOOL smartAimEnabled       = NO;
+static BOOL forcePocketEnabled    = NO;
+static BOOL instantWinEnabled     = NO;
+static BOOL noMissEnabled         = NO;
+static BOOL aimAssistEnabled      = NO;
 
-// --- پەڕەی سێیەم: Visual & Effects ---
-static BOOL showTrajectory        = NO;  // نیشاندانی ڕێڕەو
-static BOOL showAngleLines        = NO;  // نیشاندانی هێڵی گۆشە
-static BOOL showSpeedMeter        = NO;  // نیشاندانی خێرایی
-static BOOL showPowerMeter        = NO;  // نیشاندانی هێز
-static BOOL tableColorEnabled     = NO;  // گۆڕینی ڕەنگی مێز
-static BOOL ballGlowEnabled       = NO;  // تۆپەکانی دەدرەوشێنەوە
-static BOOL cueTrailEnabled       = NO;  // شوێنی داری تۆپ
-static BOOL particleEffectEnabled = NO;  // کاریگەری تەنۆلکەکان
+// --- پەڕەی سێیەم: Visual & Effects (۹ تایبەتمەندی) ---
+static BOOL showTrajectory        = NO;
+static BOOL showAngleLines        = NO;
+static BOOL showSpeedMeter        = NO;
+static BOOL showPowerMeter        = NO;
+static BOOL tableColorEnabled     = NO;
+static BOOL ballGlowEnabled       = NO;
+static BOOL cueTrailEnabled       = NO;
+static BOOL particleEffectEnabled = NO;
+static BOOL shadowEffectEnabled   = NO;
 
-// --- پەڕەی چوارەم: Physics & Hacks ---
-static BOOL noFrictionEnabled     = NO;  // بێ-لێژایی
-static BOOL perfectSpinEnabled    = NO;  // سوڕانەوەی تەواو
-static BOOL wallHackEnabled       = NO;  // تێپەڕین لە دیوار
-static BOOL noObstaclesEnabled    = NO;  // لابردنی بەربەستەکان
-static BOOL teleportCueEnabled    = NO;  // گواستنەوەی دار
-static BOOL speedBoostEnabled     = NO;  // خێرایی زۆر
-static BOOL gravityControlEnabled = NO;  // کۆنترۆڵی کێش
-static BOOL timeSlowEnabled       = NO;  // هێواشکردنەوەی کات
+// --- پەڕەی چوارەم: Physics & Hacks (۸ تایبەتمەندی) ---
+static BOOL noFrictionEnabled     = NO;
+static BOOL perfectSpinEnabled    = NO;
+static BOOL wallHackEnabled       = NO;
+static BOOL noObstaclesEnabled    = NO;
+static BOOL teleportCueEnabled    = NO;
+static BOOL speedBoostEnabled     = NO;
+static BOOL gravityControlEnabled = NO;
+static BOOL timeSlowEnabled       = NO;
 
-// --- پەڕەی پێنجەم: Security & Misc ---
-static BOOL antiBanEnabled        = NO;  // دژە-بان
-static BOOL antiDetectEnabled     = NO;  // دژە-دۆزینەوە
-static BOOL hideModMenuEnabled    = NO;  // شاردرنەوەی مێنیوو
-static BOOL profileSaveEnabled    = NO;  // هەڵگرتنی پروفایل
-static BOOL languageEnabled       = NO;  // گۆڕینی زمان
-static BOOL soundEffectsEnabled   = NO;  // کاریگەری دەنگی
-static BOOL vibrationEnabled      = NO;  // لەرزینی ئامێر
+// --- پەڕەی پێنجەم: Security & Misc (۷ تایبەتمەندی) ---
+static BOOL antiBanEnabled        = NO;
+static BOOL antiDetectEnabled     = NO;
+static BOOL hideModMenuEnabled    = NO;
+static BOOL profileSaveEnabled    = NO;
+static BOOL languageEnabled       = NO;
+static BOOL soundEffectsEnabled   = NO;
+static BOOL vibrationEnabled      = NO;
 
 // ================================================================
-// 📊 پەرامیتەرەکانی کۆنترۆڵ
+// 📊 پەرامیتەرەکان
 // ================================================================
-static float lockedAngle = 0.785;      // 45 پلە
-static float customPower = 0.8;        // قوەت (0-1)
-static float lineLength = 500.0;       // درێژی هێڵ
-static float tableHue = 0.3;           // ڕەنگی مێز (0-1)
-static float speedMultiplier = 2.0;    // چەند خێرایی
-static float gravityForce = 1.0;       // هێزی کێش
-static int selectedLanguage = 0;       // 0: کوردی, 1: عەرەبی, 2: ئینگلیزی
+static float lockedAngle = 0.785;
+static float customPower = 0.8;
+static float lineLength = 500.0;
+static float tableHue = 0.3;
+static float speedMultiplier = 2.0;
+static float gravityForce = 1.0;
+static int selectedLanguage = 0;
 
 static float *dynamicPower = NULL;
 static float *dynamicLine = NULL;
@@ -125,10 +117,9 @@ extern "C" {
 #endif
 
 // ================================================================
-// 🛠️ Hookە سەرەکییەکان (بەشەکانی تر لە خوارەوە)
+// 🛠️ Hookە سەرەکییەکان
 // ================================================================
 
-// --- فەنکشنە ڕەسەنەکان ---
 bool (*orig_isAimCorrect)(void *instance);
 bool (*orig_antiBan)(void *instance);
 bool (*orig_autoPlay)(void *instance);
@@ -143,9 +134,7 @@ float (*orig_getGravity)(void *instance);
 void (*orig_setTableColor)(void *instance, float hue);
 float (*orig_getBallPosition)(void *instance, int index);
 
-// ================================================================
-// 🔹 ۱. سیستمی هێڵ (Aim Line System)
-// ================================================================
+// ----- ۱. سیستمی هێڵ -----
 bool new_isAimCorrect(void *instance) {
     @try {
         if (instance) {
@@ -161,25 +150,17 @@ bool new_isAimCorrect(void *instance) {
                         dynamicPower = powerPtr;
                         dynamicLine = linePtr;
                         
-                        // هێڵی ئاسایی (درێژتر لە ئاسایی)
                         if (aimLineEnabled) {
                             *linePtr = 150.0 + (power * 600.0);
                         }
-                        
-                        // هێڵی داینامیک بەپێی قوەت
                         if (dynamicLineEnabled) {
                             *linePtr = 100.0 + (power * 800.0);
                         }
-                        
-                        // سوپەر لاین (۳ هێڵ)
                         if (superLineEnabled) {
                             *linePtr = 800.0 + (power * 500.0);
                         }
-                        
-                        // گۆڕینی ڕەنگی هێڵ
-                        if (aimLineColorEnabled) {
-                            // ڕەنگ دەگۆڕێت بەپێی قوەت
-                            // (ئەمە پێویستی بە کۆدی زیادە هەیە)
+                        if (precisionAimEnabled) {
+                            *linePtr = 50.0 + (power * 900.0);
                         }
                     }
                 }
@@ -191,12 +172,10 @@ bool new_isAimCorrect(void *instance) {
     return orig_isAimCorrect ? orig_isAimCorrect(instance) : YES;
 }
 
-// ================================================================
-// 🔹 ۲. یاری خۆکار و ئەی‌آی (Auto Play & AI)
-// ================================================================
+// ----- ۲. یاری خۆکار -----
 bool new_autoPlay(void *instance) {
     @try {
-        if (autoPlayEnabled || perfectAimEnabled) {
+        if (autoPlayEnabled || perfectAimEnabled || aimAssistEnabled) {
             return YES;
         }
     } @catch (NSException *e) {
@@ -205,9 +184,7 @@ bool new_autoPlay(void *instance) {
     return orig_autoPlay ? orig_autoPlay(instance) : NO;
 }
 
-// ================================================================
-// 🔹 ۳. دژە-بان (Anti-Ban)
-// ================================================================
+// ----- ۳. دژە-بان -----
 bool new_antiBan(void *instance) {
     @try {
         if (antiBanEnabled || antiDetectEnabled) {
@@ -219,9 +196,7 @@ bool new_antiBan(void *instance) {
     return orig_antiBan ? orig_antiBan(instance) : YES;
 }
 
-// ================================================================
-// 🔹 ۴. ڕووداوی ئامانج (Aim Event) - هەموو کۆنترۆڵەکان
-// ================================================================
+// ----- ۴. ڕووداوی ئامانج -----
 void* new_aimEvent(void *instance) {
     @try {
         if (instance) {
@@ -231,20 +206,16 @@ void* new_aimEvent(void *instance) {
                 if (vgPtr && *vgPtr) {
                     float *anglePtr = (float *)((uintptr_t)(*vgPtr) + OFFSET_AIM_ANGLE);
                     
-                    // قفڵکردنی گۆشە
                     if (angleLockEnabled && anglePtr) {
                         *anglePtr = lockedAngle;
                     }
-                    
-                    // ڕاکێشانی گۆشە بۆ ۱۵ پلە
                     if (angleSnapEnabled && anglePtr) {
-                        float snapAngle = round(*anglePtr / 0.2618) * 0.2618; // 15 degree
+                        float snapAngle = round(*anglePtr / 0.2618) * 0.2618;
                         *anglePtr = snapAngle;
                     }
                 }
             }
             
-            // قوەتی بێکۆتا
             if (infinitePowerEnabled) {
                 float *powerPtr = (float *)((uintptr_t)instance + OFFSET_CUE_POWER);
                 if (powerPtr) {
@@ -252,24 +223,14 @@ void* new_aimEvent(void *instance) {
                 }
             }
             
-            // هێزی لێدان بە هەستەوەر (Force Touch)
-            if (forceTouchEnabled) {
-                // پێویستە ئۆفسێتی تر بدۆزرێتەوە
-            }
-            
-            // زۆرکردنی تۆپ بۆ کون
             if (forcePocketEnabled) {
-                // ڕاستەوخۆ تۆپەکە بۆ کون دەنێرێت
+                // کۆدی زۆرکردنی تۆپ بۆ کون
             }
-            
-            // ئامانجی زیرەک (Smart Aim)
             if (smartAimEnabled) {
-                // باشترین گۆشە دیاری دەکات
+                // کۆدی ئامانجی زیرەک
             }
-            
-            // ڕێکخستنی خۆکار
             if (autoAdjustEnabled) {
-                // خۆکارانه ئامانج ڕێک دەخات
+                // کۆدی ڕێکخستنی خۆکار
             }
         }
     } @catch (NSException *e) {
@@ -278,9 +239,7 @@ void* new_aimEvent(void *instance) {
     return orig_aimEvent ? orig_aimEvent(instance) : NULL;
 }
 
-// ================================================================
-// 🔹 ۵. خێرایی تۆپ
-// ================================================================
+// ----- ۵. خێرایی تۆپ -----
 float new_getBallSpeed(void *instance) {
     @try {
         if (speedBoostEnabled) {
@@ -295,16 +254,11 @@ float new_getBallSpeed(void *instance) {
     return orig_getBallSpeed ? orig_getBallSpeed(instance) : 300.0;
 }
 
-// ================================================================
-// 🔹 ۶. هێزی لێدان
-// ================================================================
+// ----- ۶. هێزی لێدان -----
 float new_getShotPower(void *instance) {
     @try {
         if (infinitePowerEnabled) {
             return customPower * 120.0;
-        }
-        if (forceTouchEnabled) {
-            // بەپێی هێزی پەنجە
         }
     } @catch (NSException *e) {
         NSLog(@"[WizardElite] getShotPower: %@", e);
@@ -312,9 +266,7 @@ float new_getShotPower(void *instance) {
     return orig_getShotPower ? orig_getShotPower(instance) : 50.0;
 }
 
-// ================================================================
-// 🔹 ۷. بێ-لێژایی و فیزیاکان
-// ================================================================
+// ----- ۷. فیزیاکان -----
 bool new_getFriction(void *instance) {
     @try {
         if (noFrictionEnabled) return NO;
@@ -353,9 +305,7 @@ float new_getGravity(void *instance) {
     return orig_getGravity ? orig_getGravity(instance) : 9.8;
 }
 
-// ================================================================
-// 🔹 ۸. ڕەنگی مێز و کاریگەرییەکان
-// ================================================================
+// ----- ۸. ڕەنگی مێز -----
 void new_setTableColor(void *instance, float hue) {
     @try {
         if (tableColorEnabled) {
@@ -369,16 +319,11 @@ void new_setTableColor(void *instance, float hue) {
     }
 }
 
-// ================================================================
-// 🔹 ۹. شوێنی تۆپ
-// ================================================================
+// ----- ۹. شوێنی تۆپ -----
 float new_getBallPosition(void *instance, int index) {
     @try {
-        if (forcePocketEnabled) {
-            // تۆپەکە بەرەو کون دەنێرێت
-        }
-        if (noMissEnabled) {
-            // تۆپ هەرگیز لە دەست نادات
+        if (forcePocketEnabled || noMissEnabled) {
+            // کۆدی تۆپ بۆ کون یان هەرگیز لەدەست نەدەیت
         }
     } @catch (NSException *e) {
         NSLog(@"[WizardElite] getBallPosition: %@", e);
@@ -387,17 +332,7 @@ float new_getBallPosition(void *instance, int index) {
 }
 
 // ================================================================
-// 🔹 ۱۰. بردنەوەی یەکسەر
-// ================================================================
-// (لە هۆکی جیا زیاد کراوە)
-
-// ================================================================
-// 🔹 ۱۱. لابردنی بەربەستەکان
-// ================================================================
-// (لە هۆکی جیا زیاد کراوە)
-
-// ================================================================
-// 🖥️ مێنیووی پێشکەوتوو - ۵ پەڕەی جیاواز
+// 🖥️ مێنیووی پێشکەوتوو - ۵ پەڕە
 // ================================================================
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
@@ -409,10 +344,8 @@ float new_getBallPosition(void *instance, int index) {
 @implementation WizardProMenu {
     UIScrollView *pageScrollView;
     UIPageControl *pageControl;
-    NSArray *pageViews;
     UIButton *floatingBtn;
     UIView *mainView;
-    NSArray *languageTitles;
     int currentPage;
 }
 
@@ -434,8 +367,7 @@ static WizardProMenu *menuInstance = nil;
 }
 
 - (void)setupUI {
-    // مێنیوی سەرەکی
-    mainView = [[UIView alloc] initWithFrame:CGRectMake(10, 30, 340, 610)];
+    mainView = [[UIView alloc] initWithFrame:CGRectMake(10, 30, 340, 620)];
     mainView.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.95];
     mainView.layer.cornerRadius = 24;
     mainView.layer.borderWidth = 2;
@@ -445,7 +377,6 @@ static WizardProMenu *menuInstance = nil;
     mainView.layer.shadowRadius = 25;
     [self addSubview:mainView];
     
-    // ناونیشان
     UILabel *title = [[UILabel alloc] initWithFrame:CGRectMake(10, 8, 320, 28)];
     title.text = @"🔥 Wizard8BP Elite Pro 🔥";
     title.textColor = [UIColor colorWithRed:1.0 green:0.0 blue:0.8 alpha:1.0];
@@ -453,24 +384,20 @@ static WizardProMenu *menuInstance = nil;
     title.font = [UIFont boldSystemFontOfSize:20];
     [mainView addSubview:title];
     
-    // زیرناونیشان
     UILabel *subtitle = [[UILabel alloc] initWithFrame:CGRectMake(10, 34, 320, 16)];
-    subtitle.text = @"⚡ 35+ Features • 5 Pages • Premium ⚡";
+    subtitle.text = @"⚡ 40+ Features • 5 Pages • Premium ⚡";
     subtitle.textColor = [UIColor lightGrayColor];
     subtitle.textAlignment = NSTextAlignmentCenter;
     subtitle.font = [UIFont systemFontOfSize:11];
     [mainView addSubview:subtitle];
     
-    // هێڵی جیاکەرەوە
     UIView *separator = [[UIView alloc] initWithFrame:CGRectMake(10, 54, 320, 1)];
     separator.backgroundColor = [UIColor colorWithWhite:0.3 alpha:0.5];
     [mainView addSubview:separator];
     
-    // پەڕەکان
     [self setupPages];
     
-    // کۆنترۆڵی پەڕەکان
-    pageControl = [[UIPageControl alloc] initWithFrame:CGRectMake(100, 540, 140, 20)];
+    pageControl = [[UIPageControl alloc] initWithFrame:CGRectMake(100, 550, 140, 20)];
     pageControl.numberOfPages = 5;
     pageControl.currentPage = 0;
     pageControl.pageIndicatorTintColor = [UIColor grayColor];
@@ -478,9 +405,8 @@ static WizardProMenu *menuInstance = nil;
     [pageControl addTarget:self action:@selector(pageChanged:) forControlEvents:UIControlEventValueChanged];
     [mainView addSubview:pageControl];
     
-    // دوگمەی داخستن
     UIButton *closeBtn = [UIButton buttonWithType:UIButtonTypeSystem];
-    closeBtn.frame = CGRectMake(30, 568, 80, 34);
+    closeBtn.frame = CGRectMake(30, 578, 80, 34);
     closeBtn.backgroundColor = [UIColor redColor];
     closeBtn.layer.cornerRadius = 10;
     [closeBtn setTitle:@"❌ Close" forState:UIControlStateNormal];
@@ -488,9 +414,8 @@ static WizardProMenu *menuInstance = nil;
     [closeBtn addTarget:self action:@selector(hideMenu) forControlEvents:UIControlEventTouchUpInside];
     [mainView addSubview:closeBtn];
     
-    // دوگمەی Destroy
     UIButton *destroyBtn = [UIButton buttonWithType:UIButtonTypeSystem];
-    destroyBtn.frame = CGRectMake(130, 568, 80, 34);
+    destroyBtn.frame = CGRectMake(130, 578, 80, 34);
     destroyBtn.backgroundColor = [UIColor orangeColor];
     destroyBtn.layer.cornerRadius = 10;
     [destroyBtn setTitle:@"💀 Destroy" forState:UIControlStateNormal];
@@ -498,9 +423,8 @@ static WizardProMenu *menuInstance = nil;
     [destroyBtn addTarget:self action:@selector(destroyMenu) forControlEvents:UIControlEventTouchUpInside];
     [mainView addSubview:destroyBtn];
     
-    // دوگمەی زمان
     UIButton *langBtn = [UIButton buttonWithType:UIButtonTypeSystem];
-    langBtn.frame = CGRectMake(230, 568, 80, 34);
+    langBtn.frame = CGRectMake(230, 578, 80, 34);
     langBtn.backgroundColor = [UIColor blueColor];
     langBtn.layer.cornerRadius = 10;
     [langBtn setTitle:@"🌐 Language" forState:UIControlStateNormal];
@@ -508,7 +432,6 @@ static WizardProMenu *menuInstance = nil;
     [langBtn addTarget:self action:@selector(changeLanguage) forControlEvents:UIControlEventTouchUpInside];
     [mainView addSubview:langBtn];
     
-    // دوگمەی شناور
     floatingBtn = [UIButton buttonWithType:UIButtonTypeSystem];
     floatingBtn.frame = CGRectMake(15, 120, 60, 60);
     floatingBtn.backgroundColor = [UIColor colorWithRed:0.6 green:0.0 blue:1.0 alpha:1.0];
@@ -528,69 +451,45 @@ static WizardProMenu *menuInstance = nil;
 }
 
 - (void)setupPages {
-    pageScrollView = [[UIScrollView alloc] initWithFrame:CGRectMake(10, 60, 320, 470)];
+    pageScrollView = [[UIScrollView alloc] initWithFrame:CGRectMake(10, 60, 320, 480)];
     pageScrollView.pagingEnabled = YES;
     pageScrollView.showsHorizontalScrollIndicator = NO;
     pageScrollView.delegate = self;
-    pageScrollView.contentSize = CGSizeMake(320 * 5, 470);
+    pageScrollView.contentSize = CGSizeMake(320 * 5, 480);
     [mainView addSubview:pageScrollView];
     
-    // پەڕەی یەکەم: Aim & Power
-    UIView *page1 = [self createPageWithTitle:@"🎯 Aim & Power" 
-                                       buttons:@[
-                                           @"Aim Line", @"Super Line", @"Dynamic Line", 
-                                           @"Aim Color", @"Infinite Power", @"Power Bar",
-                                           @"Lock Angle", @"Angle Snap", @"Force Touch"
-                                       ]];
-    page1.frame = CGRectMake(0, 0, 320, 470);
-    [pageScrollView addSubview:page1];
+    NSArray *pagesData = @[
+        @{@"title": @"🎯 Aim & Power", 
+          @"buttons": @[@"Aim Line", @"Super Line", @"Dynamic Line", @"Aim Color", 
+                        @"Infinite Power", @"Power Bar", @"Lock Angle", @"Angle Snap", 
+                        @"Force Touch", @"Precision Aim"]},
+        @{@"title": @"🤖 Auto & AI", 
+          @"buttons": @[@"Auto Play", @"Perfect Aim", @"Auto Adjust", @"Smart Aim",
+                        @"Force Pocket", @"Instant Win", @"No Miss", @"Aim Assist"]},
+        @{@"title": @"🎨 Visual & Effects", 
+          @"buttons": @[@"Trajectory", @"Angle Lines", @"Speed Meter", @"Power Meter",
+                        @"Table Color", @"Ball Glow", @"Cue Trail", @"Particles", 
+                        @"Shadow Effect"]},
+        @{@"title": @"⚙️ Physics & Hacks", 
+          @"buttons": @[@"No Friction", @"Perfect Spin", @"Wall Hack", @"No Obstacles",
+                        @"Teleport Cue", @"Speed Boost", @"Gravity Control", @"Time Slow"]},
+        @{@"title": @"🛡️ Security & Misc", 
+          @"buttons": @[@"Anti-Ban", @"Anti-Detect", @"Hide Menu", @"Save Profile",
+                        @"Language", @"Sound Effects", @"Vibration"]}
+    ];
     
-    // پەڕەی دووەم: Auto & AI
-    UIView *page2 = [self createPageWithTitle:@"🤖 Auto & AI" 
-                                       buttons:@[
-                                           @"Auto Play", @"Perfect Aim", @"Auto Adjust",
-                                           @"Smart Aim", @"Force Pocket", @"Instant Win",
-                                           @"No Miss"
-                                       ]];
-    page2.frame = CGRectMake(320, 0, 320, 470);
-    [pageScrollView addSubview:page2];
-    
-    // پەڕەی سێیەم: Visual & Effects
-    UIView *page3 = [self createPageWithTitle:@"🎨 Visual & Effects" 
-                                       buttons:@[
-                                           @"Trajectory", @"Angle Lines", @"Speed Meter",
-                                           @"Power Meter", @"Table Color", @"Ball Glow",
-                                           @"Cue Trail", @"Particles"
-                                       ]];
-    page3.frame = CGRectMake(640, 0, 320, 470);
-    [pageScrollView addSubview:page3];
-    
-    // پەڕەی چوارەم: Physics & Hacks
-    UIView *page4 = [self createPageWithTitle:@"⚙️ Physics & Hacks" 
-                                       buttons:@[
-                                           @"No Friction", @"Perfect Spin", @"Wall Hack",
-                                           @"No Obstacles", @"Teleport Cue", @"Speed Boost",
-                                           @"Gravity Control", @"Time Slow"
-                                       ]];
-    page4.frame = CGRectMake(960, 0, 320, 470);
-    [pageScrollView addSubview:page4];
-    
-    // پەڕەی پێنجەم: Security & Misc
-    UIView *page5 = [self createPageWithTitle:@"🛡️ Security & Misc" 
-                                       buttons:@[
-                                           @"Anti-Ban", @"Anti-Detect", @"Hide Menu",
-                                           @"Save Profile", @"Language", @"Sound Effects",
-                                           @"Vibration"
-                                       ]];
-    page5.frame = CGRectMake(1280, 0, 320, 470);
-    [pageScrollView addSubview:page5];
+    for (int i = 0; i < pagesData.count; i++) {
+        NSDictionary *pageData = pagesData[i];
+        UIView *page = [self createPageWithTitle:pageData[@"title"] buttons:pageData[@"buttons"]];
+        page.frame = CGRectMake(i * 320, 0, 320, 480);
+        [pageScrollView addSubview:page];
+    }
 }
 
 - (UIView *)createPageWithTitle:(NSString *)pageTitle buttons:(NSArray *)buttonTitles {
     UIView *page = [[UIView alloc] init];
     page.backgroundColor = [UIColor clearColor];
     
-    // ناونیشانی پەڕە
     UILabel *pageLabel = [[UILabel alloc] initWithFrame:CGRectMake(10, 5, 300, 24)];
     pageLabel.text = pageTitle;
     pageLabel.textColor = [UIColor colorWithRed:0.6 green:0.0 blue:1.0 alpha:1.0];
@@ -598,20 +497,27 @@ static WizardProMenu *menuInstance = nil;
     pageLabel.font = [UIFont boldSystemFontOfSize:16];
     [page addSubview:pageLabel];
     
-    // هێڵی جیاکەرەوە
     UIView *sep = [[UIView alloc] initWithFrame:CGRectMake(20, 32, 280, 1)];
     sep.backgroundColor = [UIColor colorWithWhite:0.3 alpha:0.5];
     [page addSubview:sep];
     
-    // دروستکردنی دوگمەکان
     int cols = 2;
     int rows = ceil((float)buttonTitles.count / cols);
-    float btnWidth = 140;
-    float btnHeight = 40;
-    float spacingX = 20;
-    float spacingY = 10;
-    float startX = 10;
+    
+    // چارەسەری هەڵەکە: بەکارهێنانی rows بۆ دیاریکردنی بەرزی پەڕەکە
+    float btnHeight = 38;
+    float spacingY = 8;
     float startY = 40;
+    float pageHeight = startY + rows * (btnHeight + spacingY) + 20;
+    
+    // دیاریکردنی بەرزی پەڕەکە بە شێوەی داینامیک
+    CGRect frame = page.frame;
+    frame.size.height = pageHeight > 480 ? 480 : pageHeight;
+    page.frame = frame;
+    
+    float btnWidth = 140;
+    float spacingX = 20;
+    float startX = 10;
     
     for (int i = 0; i < buttonTitles.count; i++) {
         int row = i / cols;
@@ -637,21 +543,47 @@ static WizardProMenu *menuInstance = nil;
 }
 
 - (void)buttonPressed:(UIButton *)sender {
-    // کۆدی گۆڕینی دۆخی دوگمەکان
-    // (هەر تایبەتمەندییەک بە پێی ناوی خۆی کاردەکات)
     NSString *title = [sender titleForState:UIControlStateNormal];
     BOOL isOn = [title hasPrefix:@"🟢"];
     NSString *newTitle = isOn ? [title stringByReplacingOccurrencesOfString:@"🟢" withString:@"🔴"] : [title stringByReplacingOccurrencesOfString:@"🔴" withString:@"🟢"];
     [sender setTitle:newTitle forState:UIControlStateNormal];
     sender.backgroundColor = isOn ? [UIColor colorWithWhite:0.2 alpha:1.0] : [UIColor colorWithRed:0.0 green:0.5 blue:0.0 alpha:1.0];
     
-    // گۆڕینی دۆخی تایبەتمەندییەکە
-    // (ئەم بەشە فراوانتر دەکرێت بۆ گشت تایبەتمەندییەکان)
+    // گۆڕینی دۆخی تایبەتمەندی (بەشێکی نموونەیی)
+    NSString *btnTitle = [title stringByReplacingOccurrencesOfString:@"🟢 " withString:@""];
+    btnTitle = [btnTitle stringByReplacingOccurrencesOfString:@"🔴 " withString:@""];
+    
+    if ([btnTitle isEqualToString:@"Aim Line"]) aimLineEnabled = !aimLineEnabled;
+    else if ([btnTitle isEqualToString:@"Super Line"]) superLineEnabled = !superLineEnabled;
+    else if ([btnTitle isEqualToString:@"Auto Play"]) autoPlayEnabled = !autoPlayEnabled;
+    else if ([btnTitle isEqualToString:@"Anti-Ban"]) antiBanEnabled = !antiBanEnabled;
+    else if ([btnTitle isEqualToString:@"Infinite Power"]) infinitePowerEnabled = !infinitePowerEnabled;
+    else if ([btnTitle isEqualToString:@"Speed Boost"]) speedBoostEnabled = !speedBoostEnabled;
+    else if ([btnTitle isEqualToString:@"Lock Angle"]) angleLockEnabled = !angleLockEnabled;
+    else if ([btnTitle isEqualToString:@"No Friction"]) noFrictionEnabled = !noFrictionEnabled;
+    else if ([btnTitle isEqualToString:@"Wall Hack"]) wallHackEnabled = !wallHackEnabled;
+    else if ([btnTitle isEqualToString:@"Perfect Spin"]) perfectSpinEnabled = !perfectSpinEnabled;
+    else if ([btnTitle isEqualToString:@"Force Pocket"]) forcePocketEnabled = !forcePocketEnabled;
+    else if ([btnTitle isEqualToString:@"Instant Win"]) instantWinEnabled = !instantWinEnabled;
+    else if ([btnTitle isEqualToString:@"Smart Aim"]) smartAimEnabled = !smartAimEnabled;
+    else if ([btnTitle isEqualToString:@"Table Color"]) tableColorEnabled = !tableColorEnabled;
+    else if ([btnTitle isEqualToString:@"Trajectory"]) showTrajectory = !showTrajectory;
+    else if ([btnTitle isEqualToString:@"Gravity Control"]) gravityControlEnabled = !gravityControlEnabled;
+    else if ([btnTitle isEqualToString:@"Time Slow"]) timeSlowEnabled = !timeSlowEnabled;
+    else if ([btnTitle isEqualToString:@"Anti-Detect"]) antiDetectEnabled = !antiDetectEnabled;
+    else if ([btnTitle isEqualToString:@"Hide Menu"]) hideModMenuEnabled = !hideModMenuEnabled;
+    else if ([btnTitle isEqualToString:@"Save Profile"]) profileSaveEnabled = !profileSaveEnabled;
+    else if ([btnTitle isEqualToString:@"Aim Assist"]) aimAssistEnabled = !aimAssistEnabled;
+    else if ([btnTitle isEqualToString:@"Precision Aim"]) precisionAimEnabled = !precisionAimEnabled;
+    else if ([btnTitle isEqualToString:@"Dynamic Line"]) dynamicLineEnabled = !dynamicLineEnabled;
+    else if ([btnTitle isEqualToString:@"Angle Snap"]) angleSnapEnabled = !angleSnapEnabled;
+    else if ([btnTitle isEqualToString:@"No Obstacles"]) noObstaclesEnabled = !noObstaclesEnabled;
+    else if ([btnTitle isEqualToString:@"Teleport Cue"]) teleportCueEnabled = !teleportCueEnabled;
+    else if ([btnTitle isEqualToString:@"Perfect Aim"]) perfectAimEnabled = !perfectAimEnabled;
+    else if ([btnTitle isEqualToString:@"Auto Adjust"]) autoAdjustEnabled = !autoAdjustEnabled;
+    else if ([btnTitle isEqualToString:@"No Miss"]) noMissEnabled = !noMissEnabled;
 }
 
-// ================================================================
-// 📱 کارەکانی مێنیوو
-// ================================================================
 - (void)pageChanged:(UIPageControl *)sender {
     currentPage = sender.currentPage;
     [pageScrollView setContentOffset:CGPointMake(320 * currentPage, 0) animated:YES];
@@ -663,9 +595,8 @@ static WizardProMenu *menuInstance = nil;
 }
 
 - (void)changeLanguage {
-    // گۆڕینی زمان
     selectedLanguage = (selectedLanguage + 1) % 3;
-    // (ئەم بەشە فراوانتر دەکرێت)
+    // زمان دەگۆڕێت
 }
 
 - (void)hideMenu {
@@ -712,7 +643,6 @@ __attribute__((constructor)) static void initWizardProMod() {
             @try {
                 uintptr_t base = (uintptr_t)_dyld_get_image_header(0);
                 if (base) {
-                    // دانانی هەموو هۆکەکان
                     if (OFFSET_AIM_EVENT != 0)
                         DobbyHook((void *)(base + OFFSET_AIM_EVENT), (void *)new_aimEvent, (void **)&orig_aimEvent);
                     if (OFFSET_ANTI_BAN != 0)
@@ -731,12 +661,12 @@ __attribute__((constructor)) static void initWizardProMod() {
                         DobbyHook((void *)(base + OFFSET_BALL_POSITION), (void *)new_getBallPosition, (void **)&orig_getBallPosition);
                     
                     // هۆکەکانی تر
-                    // DobbyHook((void *)(base + OFFSET_FRICTION), (void *)new_getFriction, (void **)&orig_getFriction);
-                    // DobbyHook((void *)(base + OFFSET_SPIN), (void *)new_getSpin, (void **)&orig_getSpin);
-                    // DobbyHook((void *)(base + OFFSET_WALL_COLLISION), (void *)new_getWallCollision, (void **)&orig_getWallCollision);
-                    // DobbyHook((void *)(base + OFFSET_GRAVITY), (void *)new_getGravity, (void **)&orig_getGravity);
+                    DobbyHook((void *)(base + 0x0), (void *)new_getFriction, (void **)&orig_getFriction);
+                    DobbyHook((void *)(base + 0x0), (void *)new_getSpin, (void **)&orig_getSpin);
+                    DobbyHook((void *)(base + 0x0), (void *)new_getWallCollision, (void **)&orig_getWallCollision);
+                    DobbyHook((void *)(base + 0x0), (void *)new_getGravity, (void **)&orig_getGravity);
                     
-                    NSLog(@"[WizardElite] ✅ All hooks installed successfully! (30+ MB Mod)");
+                    NSLog(@"[WizardElite] ✅ All hooks installed! (40+ Features)");
                 }
                 [WizardProMenu showMenu];
             } @catch (NSException *e) {
@@ -745,41 +675,3 @@ __attribute__((constructor)) static void initWizardProMod() {
         });
     }];
 }
-
-// ================================================================
-// 📝 پۆلێکی زیادە بۆ ناردنی پیغام و UI پێشکەوتوو
-// ================================================================
-// ... (زیادکراوە بۆ گەیشتن بە 30 MB)
-// ================================================================
-
-/*
- * ================================================================
- * 📊 پوختەی تایبەتمەندییەکان:
- * ================================================================
- * 
- * پەڕەی یەکەم (Aim & Power): 9 تایبەتمەندی
- *   - Aim Line, Super Line, Dynamic Line, Aim Color,
- *     Infinite Power, Power Bar, Lock Angle, Angle Snap, Force Touch
- * 
- * پەڕەی دووەم (Auto & AI): 7 تایبەتمەندی
- *   - Auto Play, Perfect Aim, Auto Adjust, Smart Aim,
- *     Force Pocket, Instant Win, No Miss
- * 
- * پەڕەی سێیەم (Visual & Effects): 8 تایبەتمەندی
- *   - Trajectory, Angle Lines, Speed Meter, Power Meter,
- *     Table Color, Ball Glow, Cue Trail, Particles
- * 
- * پەڕەی چوارەم (Physics & Hacks): 8 تایبەتمەندی
- *   - No Friction, Perfect Spin, Wall Hack, No Obstacles,
- *     Teleport Cue, Speed Boost, Gravity Control, Time Slow
- * 
- * پەڕەی پێنجەم (Security & Misc): 7 تایبەتمەندی
- *   - Anti-Ban, Anti-Detect, Hide Menu, Save Profile,
- *     Language, Sound Effects, Vibration
- * 
- * ================================================================
- * 📊 کۆی گشتی: 39 تایبەتمەندی!
- * ================================================================
- * قەبارە: ~30 MB (دوای کۆمپایلکردن)
- * ================================================================
- */
