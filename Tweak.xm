@@ -2,23 +2,27 @@
 #import <mach-o/dyld.h>
 #include <objc/runtime.h>
 
-// ====================================================================
-// 📌 ئۆفسێتەکان - پێویستە خۆت بدۆزیتەوە بۆ ڤێرشنی 56.26.1
-// ====================================================================
-#define OFFSET_AIM_LINE              0x0 // بگۆڕە
-#define OFFSET_CUE_POWER             0x0
-#define OFFSET_GET_AIM_EVENT         0x0
-#define OFFSET_ANTI_BAN              0x0
+// ============================================================
+// 📌 ئۆفسێتەکان - تەنها ئەم دووە پێویستە بدۆزیتەوە
+// ============================================================
+#define OFFSET_GAME_MANAGER          0x0  // شوێنی GameManager لە بیرگەدا
+#define OFFSET_CUE_POWER             0x0  // شوێنی قوەتی دار (float, 0.0 بۆ 1.0)
 
-// ====================================================================
+// ئەم ئۆفسێتانە لە پێکهاتەی تۆوە هاتوون و جێگیرن
+#define OFFSET_VISUAL_CUE            0x4d0
+#define OFFSET_VISUAL_GUIDE          0x3b8
+#define OFFSET_AIM_ANGLE             0x28
+#define OFFSET_AIM_LINE_LENGTH       0x30  // ئەمە تەخمینە، پێویستە خۆت بدۆزیتەوە
+
+// ============================================================
 // دۆخی دوگمەکان
-// ====================================================================
+// ============================================================
 static BOOL aimLineEnabled = NO;
 static BOOL antiBanEnabled = NO;
 
-// ====================================================================
+// ============================================================
 // پێناسەکردنی Dobby Hook
-// ====================================================================
+// ============================================================
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -27,22 +31,47 @@ extern "C" {
 }
 #endif
 
-// ====================================================================
+// ============================================================
 // Hookەکان
-// ====================================================================
+// ============================================================
 bool (*orig_isAimCorrect)(void *instance);
 bool (*orig_antiBan)(void *instance);
 void* (*orig_getAimEvent)(void *instance);
 
+// ۱. درێژکردنی هێڵ بەپێی قوەت (بە پێکهاتەی تۆ)
 bool new_isAimCorrect(void *instance) {
     @try {
-        if (aimLineEnabled) return YES;
+        if (aimLineEnabled && instance) {
+            // دەستکەوتنی GameManager
+            uintptr_t gmPtr = (uintptr_t)instance;
+            
+            // بەدەستهێنانی VisualCue
+            void **vcPtr = (void **)(gmPtr + OFFSET_VISUAL_CUE);
+            if (vcPtr && *vcPtr) {
+                // بەدەستهێنانی VisualGuide
+                void **vgPtr = (void **)((uintptr_t)(*vcPtr) + OFFSET_VISUAL_GUIDE);
+                if (vgPtr && *vgPtr) {
+                    // دەستکەوتنی قوەت (پێویستە ئۆفسێتەکە بدۆزیتەوە)
+                    float *powerPtr = (float *)((uintptr_t)instance + OFFSET_CUE_POWER);
+                    // دەستکەوتنی درێژی هێڵ (پێویستە ئۆفسێتەکە بدۆزیتەوە)
+                    float *linePtr = (float *)((uintptr_t)(*vgPtr) + OFFSET_AIM_LINE_LENGTH);
+                    
+                    if (powerPtr && linePtr) {
+                        float power = *powerPtr;
+                        // درێژی هێڵ لە ۲۰۰ بۆ ۷۰۰ پیکسڵ بەپێی قوەت
+                        *linePtr = 200.0 + (power * 500.0);
+                    }
+                }
+            }
+            return YES;
+        }
     } @catch (NSException *e) {
         NSLog(@"[Mod] isAimCorrect: %@", e);
     }
     return orig_isAimCorrect ? orig_isAimCorrect(instance) : YES;
 }
 
+// ۲. ئەنتی بان
 bool new_antiBan(void *instance) {
     @try {
         if (antiBanEnabled) return YES;
@@ -52,17 +81,23 @@ bool new_antiBan(void *instance) {
     return orig_antiBan ? orig_antiBan(instance) : YES;
 }
 
+// ۳. فەنکشنی ڕووداوی ئامانج (بۆ هۆککردنی زیادە)
 void* new_getAimEvent(void *instance) {
     @try {
-        if (aimLineEnabled && instance != NULL) {
-            // کاتی ئۆفسێتەکان دۆزییەوە، ئەم بەشە چالاک بکە
-            /*
-            float *power = (float *)((uintptr_t)instance + OFFSET_CUE_POWER);
-            float *line  = (float *)((uintptr_t)instance + OFFSET_AIM_LINE);
-            if (power && line) {
-                *line = 200.0 + (*power * 400.0);
+        if (aimLineEnabled && instance) {
+            // دەتوانیت لێرەدا گۆشەکە بخوێنیت یان بگۆڕیت
+            uintptr_t gmPtr = (uintptr_t)instance;
+            void **vcPtr = (void **)(gmPtr + OFFSET_VISUAL_CUE);
+            if (vcPtr && *vcPtr) {
+                void **vgPtr = (void **)((uintptr_t)(*vcPtr) + OFFSET_VISUAL_GUIDE);
+                if (vgPtr && *vgPtr) {
+                    float *anglePtr = (float *)((uintptr_t)(*vgPtr) + OFFSET_AIM_ANGLE);
+                    if (anglePtr) {
+                        // بۆ نموونە: گۆشەکە بخوێنە
+                        // NSLog(@"Aim Angle: %f", *anglePtr);
+                    }
+                }
             }
-            */
         }
     } @catch (NSException *e) {
         NSLog(@"[Mod] getAimEvent: %@", e);
@@ -70,9 +105,9 @@ void* new_getAimEvent(void *instance) {
     return orig_getAimEvent ? orig_getAimEvent(instance) : NULL;
 }
 
-// ====================================================================
-// 🖥️ مێنیوو - بە پشتگوێخستنی ئاگادارییەکانی iOS 26
-// ====================================================================
+// ============================================================
+// 🖥️ مێنیووی مۆد (UI)
+// ============================================================
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
 
@@ -90,7 +125,6 @@ static UIButton *floatingBtn = nil;
     dispatch_async(dispatch_get_main_queue(), ^{
         @try {
             if (menuInstance) return;
-            // ئەم دوو هێڵە ئاگاداری دەردەکەن، بە پشتیوانی iOS 26
             menuInstance = [[ModMenuWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
             menuInstance.windowLevel = UIWindowLevelAlert + 1;
             menuInstance.backgroundColor = [UIColor clearColor];
@@ -104,7 +138,7 @@ static UIButton *floatingBtn = nil;
             [menuInstance addSubview:mainView];
             
             UILabel *title = [[UILabel alloc] initWithFrame:CGRectMake(10, 15, 230, 30)];
-            title.text = @"🎱 8BP Mod V5";
+            title.text = @"🎱 8BP Pro Mod";
             title.textColor = [UIColor whiteColor];
             title.textAlignment = NSTextAlignmentCenter;
             title.font = [UIFont boldSystemFontOfSize:18];
@@ -186,9 +220,9 @@ static UIButton *floatingBtn = nil;
 
 #pragma clang diagnostic pop
 
-// ====================================================================
-// 🚀 لۆدبوون
-// ====================================================================
+// ============================================================
+// 🚀 لۆدبوونی مۆد
+// ============================================================
 __attribute__((constructor)) static void initMod() {
     [[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationDidFinishLaunchingNotification
                                                       object:nil
@@ -197,10 +231,11 @@ __attribute__((constructor)) static void initMod() {
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
             @try {
                 uintptr_t base = (uintptr_t)_dyld_get_image_header(0);
-                if (base && OFFSET_AIM_LINE != 0) {
-                    DobbyHook((void *)(base + OFFSET_AIM_LINE), (void *)new_isAimCorrect, (void **)&orig_isAimCorrect);
-                    DobbyHook((void *)(base + OFFSET_GET_AIM_EVENT), (void *)new_getAimEvent, (void **)&orig_getAimEvent);
+                if (base && OFFSET_GAME_MANAGER != 0) {
+                    // هوککردنی فەنکشنەکان
+                    DobbyHook((void *)(base + OFFSET_GAME_MANAGER), (void *)new_isAimCorrect, (void **)&orig_isAimCorrect);
                     DobbyHook((void *)(base + OFFSET_ANTI_BAN), (void *)new_antiBan, (void **)&orig_antiBan);
+                    DobbyHook((void *)(base + OFFSET_GET_AIM_EVENT), (void *)new_getAimEvent, (void **)&orig_getAimEvent);
                 }
                 [ModMenuWindow showMenu];
             } @catch (NSException *e) {
