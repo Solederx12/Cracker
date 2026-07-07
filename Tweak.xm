@@ -4,7 +4,7 @@
 #import <libspector/spector.h>  // ✅ بەکارهێنانی libspector
 
 // ================================================================
-// 📌 ئۆفسێتەکان - ۱۰ ئۆفسێت پێویستە
+// 📌 ئۆفسێتەکان - ۱۰ ئۆفسێت پێویستە (پێویستە خۆت پڕبکەیتەوە)
 // ================================================================
 #define OFFSET_GAME_MANAGER          0x0
 #define OFFSET_AIM_EVENT             0x0
@@ -40,7 +40,7 @@ static float lockedAngle = 0.785;   // ۴۵ پلە
 static float customPower = 0.8;
 
 // ================================================================
-// 🛠️ Hookە سەرەکییەکان
+// 🛠️ Hookە سەرەکییەکان (بۆ libspector)
 // ================================================================
 bool (*orig_isAimCorrect)(void *instance);
 bool (*orig_antiBan)(void *instance);
@@ -51,7 +51,7 @@ float (*orig_getShotPower)(void *instance);
 bool (*orig_getFriction)(void *instance);
 void (*orig_setTableColor)(void *instance, float hue);
 
-// ----- ۱. هێڵی درێژ -----
+// ----- ۱. هێڵی درێژ و سوپەر لاین -----
 bool new_isAimCorrect(void *instance) {
     @try {
         if (instance) {
@@ -157,10 +157,9 @@ bool new_getFriction(void *instance) {
     return orig_getFriction ? orig_getFriction(instance) : YES;
 }
 
-// ----- ۸. ڕەنگی مێز (ئەمە پێویستە ئۆفسێتەکەی بدۆزیتەوە) -----
+// ----- ۸. ڕەنگی مێز (پێویستە ئۆفسێتەکە بدۆزیتەوە) -----
 void new_setTableColor(void *instance, float hue) {
     @try {
-        // ئەگەر ئۆفسێتی ڕەنگی مێزت دۆزییەوە، ئەم هۆکە چالاک بکە
         // hue = 0.5; // نموونە
     } @catch (NSException *e) {
         NSLog(@"[EliteMod] setTableColor: %@", e);
@@ -171,7 +170,7 @@ void new_setTableColor(void *instance, float hue) {
 }
 
 // ================================================================
-// 🖥️ مێنیووی سادە (UI) بە ۸ دوگمە
+// 🖥️ مێنیووی UI (بە ۸ دوگمە + دوگمەی سەرەوە)
 // ================================================================
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
@@ -215,14 +214,8 @@ static UIButton *floatingBtn = nil;
                 @"Infinite Power", @"Speed Boost", @"Lock Angle", @"No Friction"
             ];
             NSArray *selectors = @[
-                @"toggleAim:",
-                @"toggleSuper:",
-                @"toggleAuto:",
-                @"toggleBan:",
-                @"togglePower:",
-                @"toggleSpeed:",
-                @"toggleAngle:",
-                @"toggleFriction:"
+                @"toggleAim:", @"toggleSuper:", @"toggleAuto:", @"toggleBan:",
+                @"togglePower:", @"toggleSpeed:", @"toggleAngle:", @"toggleFriction:"
             ];
             
             for (int i = 0; i < titles.count; i++) {
@@ -308,7 +301,115 @@ static UIButton *floatingBtn = nil;
 #pragma clang diagnostic pop
 
 // ================================================================
-// 🚀 لۆدبوونی مۆد (گۆڕدراو بۆ libspector)
+// 👑 هۆکەکانی لۆگۆس (Logos) - تایبەتمەندییەکانی i3rby
+// ================================================================
+
+// هۆکی سەرەکی بۆ گەیشتن بە هەموو تایبەتمەندییەکان
+%hook GameManager
+- (BOOL)isOnCreatorMode { return YES; }
+- (BOOL)isOnGoldenShotMode { return YES; }
+- (BOOL)isOnPracticeMode { return YES; }
+- (BOOL)isOnTournamentMode { return YES; }
+%end
+
+// هۆکی بینایی (هێڵەکان، پۆکێتەکان، خاڵەکان)
+%hook GraphicsManager
+- (float)lineOpacity { return 0.90; }
+- (float)endBallSize { return 1.00; }
+- (float)pocketRingSize { return 1.20; }
+- (float)initialPull { return 1.00; }
+- (float)shiftX { return 0.0; }
+- (float)shiftY { return 0.0; }
+- (float)lineScaleX { return 1.000; }
+- (float)lineScaleY { return 1.000; }
+- (float)lineThickness { return 1.00; }
+%end
+
+// هۆکی هێڵەکانی پێشبینی
+%hook PredictionManager
+- (BOOL)showPredictionLines { return YES; }
+- (BOOL)showOpponentLines { return YES; }
+- (BOOL)showTableOutline { return YES; }
+- (BOOL)showPocketRings { return YES; }
+- (BOOL)showEndDots { return YES; }
+- (BOOL)showPrecisePaths { return YES; }
+- (BOOL)showScratchAlert { return YES; }
+- (BOOL)showWrongBallAlert { return YES; }
+- (BOOL)showStreamProof { return YES; }
+%end
+
+// هۆکی ئۆتۆمەیشن و PRO
+%hook AutomationManager
+- (BOOL)isProUnlocked { return YES; }
+- (BOOL)isAdFree { return YES; }
+- (int)proPlanStatus { return 1; } // 0=day, 1=week, 2=month
+- (float)aimStrength { return 0.07; }
+- (float)maxAimSpeed { return 140.0; }
+- (float)waitTime { return 1.00; }
+%end
+
+// هۆکی Spin و Aim
+%hook AimController
+- (NSString *)spinStyle { return @"Off"; } // Off, Suggest, Assist, Guide
+- (NSString *)aimMode { return @"Guide"; }
+- (NSString *)humanization { return @"Med"; } // Low, Med, High
+- (NSString *)skillLevel { return @"Pro"; } // Casual, Pro, Stealth
+- (NSString *)breakMode { return @"Single"; } // Single, Multi
+%end
+
+// هۆکی دوگمە و Ghost
+%hook ShortcutManager
+- (BOOL)shortcutButtonEnabled { return YES; }
+- (BOOL)bestShotGhostEnabled { return YES; }
+- (BOOL)autoSelectPocketEnabled { return YES; }
+- (BOOL)ballInHandSkipEnabled { return YES; }
+- (BOOL)pauseOnTouchEnabled { return YES; }
+%end
+
+// ================================================================
+// ❌ لابردنی ناو و لۆگۆی i3rby لە هەموو شوێنێک + زیادکردنی ناوی خۆت
+// ================================================================
+%hook i3rbyStoreViewController
+- (void)viewDidLoad {
+    %orig;
+    @try {
+        // لابردنی هەموو ئەو UI عناصرەی کە ناوی i3rby, Telegram, Facebook یان لۆگۆیان تیاە
+        for (UIView *subview in self.view.subviews) {
+            if ([subview isKindOfClass:[UILabel class]]) {
+                UILabel *label = (UILabel *)subview;
+                if ([label.text containsString:@"i3rby"] || 
+                    [label.text containsString:@"Telegram"] || 
+                    [label.text containsString:@"Facebook"] ||
+                    [label.text containsString:@"i3rby Store"]) {
+                    [label removeFromSuperview];
+                }
+            }
+            if ([subview isKindOfClass:[UIImageView class]]) {
+                [subview removeFromSuperview]; // لابردنی لۆگۆ
+            }
+            if ([subview isKindOfClass:[UIButton class]]) {
+                UIButton *btn = (UIButton *)subview;
+                if ([btn.titleLabel.text containsString:@"Telegram"] || 
+                    [btn.titleLabel.text containsString:@"FB"] ||
+                    [btn.titleLabel.text containsString:@"i3rby"]) {
+                    [btn removeFromSuperview];
+                }
+            }
+        }
+        // زیادکردنی ناوی خۆت (ئەمە بە ناوی خۆت بگۆڕە)
+        UILabel *myLabel = [[UILabel alloc] initWithFrame:CGRectMake(10, 10, 250, 30)];
+        myLabel.text = @"🔥 Hack by [ناوی تۆ]";
+        myLabel.textColor = [UIColor systemYellowColor];
+        myLabel.font = [UIFont boldSystemFontOfSize:16];
+        [self.view addSubview:myLabel];
+    } @catch (NSException *e) {
+        NSLog(@"[EliteMod] Branding removal error: %@", e);
+    }
+}
+%end
+
+// ================================================================
+// 🚀 لۆدبوونی مۆد (libspector + Logos)
 // ================================================================
 __attribute__((constructor)) static void initMod() {
     [[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationDidFinishLaunchingNotification
@@ -334,7 +435,7 @@ __attribute__((constructor)) static void initMod() {
                         spector_hook((void *)(base + OFFSET_SHOT_POWER), (void *)new_getShotPower, (void **)&orig_getShotPower);
                     if (OFFSET_TABLE_COLOR != 0)
                         spector_hook((void *)(base + OFFSET_TABLE_COLOR), (void *)new_setTableColor, (void **)&orig_setTableColor);
-                    // بۆ getFriction پێویستە هۆک بکرێت ئەگەر ئۆفسێتەکەت هەیە
+                    // بۆ getFriction ئەگەر ئۆفسێتەکەت هەیە ئەم هێڵە لابراوە لابە
                     // spector_hook((void *)(base + OFFSET_FRICTION), (void *)new_getFriction, (void **)&orig_getFriction);
                     
                     NSLog(@"[EliteMod] ✅ Hooks installed with libspector!");
