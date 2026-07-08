@@ -1,7 +1,7 @@
 #import <UIKit/UIKit.h>
 
 // ================================================================
-// 🕹️ دۆخی دوگمەکان - ئێستا لە هۆکەکان بەکاردێن
+// 🕹️ دۆخی دوگمەکان
 // ================================================================
 static BOOL aimLineEnabled     = NO;
 static BOOL superLineEnabled   = NO;
@@ -12,16 +12,19 @@ static BOOL speedBoostEnabled  = NO;
 static BOOL angleLockEnabled   = NO;
 static BOOL noFrictionEnabled  = NO;
 
-static float lockedAngle = 0.785;   // 45°
-static float customPower = 0.8;     // بۆ ئینفینێت پاوەر بەکاردێت
+static float lockedAngle = 0.785;
+static float customPower = 0.8;
 
 // ================================================================
-// 🖥️ مێنیووی UI - هەمان شێوە، بەڵام چاککراو
+// 🖥️ مێنیووی UI (بێ وارنینگی deprecated)
 // ================================================================
 @interface SimpleMenu : UIWindow
 + (void)showMenu;
-- (void)drag:(UIPanGestureRecognizer *)g;  // ئێستا میثۆدی شتە
+- (void)drag:(UIPanGestureRecognizer *)g;
 @end
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
 
 @implementation SimpleMenu
 
@@ -84,7 +87,6 @@ static UIButton *floatingBtn = nil;
             [close addTarget:self action:@selector(hideMenu) forControlEvents:UIControlEventTouchUpInside];
             [mainView addSubview:close];
             
-            // دوگمەی هەڵواسراو
             floatingBtn = [UIButton buttonWithType:UIButtonTypeSystem];
             floatingBtn.frame = CGRectMake(20, 150, 55, 55);
             floatingBtn.backgroundColor = [UIColor purpleColor];
@@ -93,7 +95,6 @@ static UIButton *floatingBtn = nil;
             [floatingBtn setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
             [floatingBtn addTarget:self action:@selector(showFromFloating) forControlEvents:UIControlEventTouchUpInside];
             
-            // پەنجەرۆکە بۆ دراگکردن (ئێستا لەسەر menuInstance)
             UIPanGestureRecognizer *pan = [[UIPanGestureRecognizer alloc] initWithTarget:menuInstance action:@selector(drag:)];
             [floatingBtn addGestureRecognizer:pan];
             [menuInstance addSubview:floatingBtn];
@@ -105,7 +106,6 @@ static UIButton *floatingBtn = nil;
     });
 }
 
-// دوگمەکانی تاگڵ
 + (void)toggleAim:(UIButton *)sender    { aimLineEnabled = !aimLineEnabled; [self update:sender title:@"Aim Line" on:aimLineEnabled]; }
 + (void)toggleSuper:(UIButton *)sender  { superLineEnabled = !superLineEnabled; [self update:sender title:@"Super Line" on:superLineEnabled]; }
 + (void)toggleAuto:(UIButton *)sender   { autoPlayEnabled = !autoPlayEnabled; [self update:sender title:@"Auto Play" on:autoPlayEnabled]; }
@@ -120,15 +120,8 @@ static UIButton *floatingBtn = nil;
     [btn setTitle:[NSString stringWithFormat:@"%@ %@: %@", on ? @"🟢" : @"🔴", title, on ? @"ON" : @"OFF"] forState:UIControlStateNormal];
 }
 
-+ (void)hideMenu {
-    mainView.hidden = YES;
-    floatingBtn.hidden = NO;
-}
-
-+ (void)showFromFloating {
-    mainView.hidden = NO;
-    floatingBtn.hidden = YES;
-}
++ (void)hideMenu { mainView.hidden = YES; floatingBtn.hidden = NO; }
++ (void)showFromFloating { mainView.hidden = NO; floatingBtn.hidden = YES; }
 
 - (void)drag:(UIPanGestureRecognizer *)g {
     if (!menuInstance || g.view != floatingBtn) return;
@@ -137,7 +130,6 @@ static UIButton *floatingBtn = nil;
     [g setTranslation:CGPointZero inView:menuInstance];
 }
 
-// ڕێگەدان بە پەنجەدان لە دەرەوەی مێنیوو
 - (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event {
     UIView *v = [super hitTest:point withEvent:event];
     return (v == self) ? nil : v;
@@ -145,84 +137,82 @@ static UIButton *floatingBtn = nil;
 
 @end
 
+#pragma clang diagnostic pop
+
 // ================================================================
-// 👑 هۆکەکانی لۆگۆس - ئێستا بەستراوەتەوە بە دوگمەکان
+// 👑 هۆکەکانی لۆگۆس (هەموو براکێتەکان بە وریایی دانراون)
 // ================================================================
 
 %hook GameManager
-- (BOOL)isOnCreatorMode    { return autoPlayEnabled ? YES : %orig; }
+- (BOOL)isOnCreatorMode { return autoPlayEnabled ? YES : %orig; }
 - (BOOL)isOnGoldenShotMode { return autoPlayEnabled ? YES : %orig; }
-- (BOOL)isOnPracticeMode   { return autoPlayEnabled ? YES : %orig; }
+- (BOOL)isOnPracticeMode { return autoPlayEnabled ? YES : %orig; }
 - (BOOL)isOnTournamentMode { return autoPlayEnabled ? YES : %orig; }
 %end
 
 %hook GraphicsManager
-- (float)lineOpacity    { return 0.90; }
-- (float)endBallSize    { return 1.00; }
+- (float)lineOpacity { return 0.90; }
+- (float)endBallSize { return 1.00; }
 - (float)pocketRingSize { return 1.20; }
-- (float)initialPull    { return 1.00; }
-- (float)shiftX         { return 0.0; }
-- (float)shiftY         { return 0.0; }
-- (float)lineScaleX     { return superLineEnabled ? 2.0 : 1.0; }
-- (float)lineScaleY     { return superLineEnabled ? 2.0 : 1.0; }
-- (float)lineThickness  { return superLineEnabled ? 2.0 : 1.0; }
+- (float)initialPull { return 1.00; }
+- (float)shiftX { return 0.0; }
+- (float)shiftY { return 0.0; }
+- (float)lineScaleX { return superLineEnabled ? 2.0 : 1.0; }
+- (float)lineScaleY { return superLineEnabled ? 2.0 : 1.0; }
+- (float)lineThickness { return superLineEnabled ? 2.0 : 1.0; }
 %end
 
 %hook PredictionManager
-- (BOOL)showPredictionLines  { return aimLineEnabled; }
-- (BOOL)showOpponentLines    { return aimLineEnabled; }
-- (BOOL)showTableOutline     { return YES; }          // هەمیشە چالاک
-- (BOOL)showPocketRings      { return YES; }
-- (BOOL)showEndDots          { return aimLineEnabled; }
-- (BOOL)showPrecisePaths     { return aimLineEnabled; }
-- (BOOL)showScratchAlert     { return YES; }
-- (BOOL)showWrongBallAlert   { return YES; }
-- (BOOL)showStreamProof      { return YES; }
+- (BOOL)showPredictionLines { return aimLineEnabled; }
+- (BOOL)showOpponentLines { return aimLineEnabled; }
+- (BOOL)showTableOutline { return YES; }
+- (BOOL)showPocketRings { return YES; }
+- (BOOL)showEndDots { return aimLineEnabled; }
+- (BOOL)showPrecisePaths { return aimLineEnabled; }
+- (BOOL)showScratchAlert { return YES; }
+- (BOOL)showWrongBallAlert { return YES; }
+- (BOOL)showStreamProof { return YES; }
 %end
 
 %hook AutomationManager
-- (BOOL)isProUnlocked   { return autoPlayEnabled ? YES : %orig; }
-- (BOOL)isAdFree        { return autoPlayEnabled ? YES : %orig; }
-- (int)proPlanStatus    { return autoPlayEnabled ? 1 : %orig; }
-- (float)aimStrength    { return autoPlayEnabled ? 0.07 : %orig; }
-- (float)maxAimSpeed    {
+- (BOOL)isProUnlocked { return autoPlayEnabled ? YES : %orig; }
+- (BOOL)isAdFree { return autoPlayEnabled ? YES : %orig; }
+- (int)proPlanStatus { return autoPlayEnabled ? 1 : %orig; }
+- (float)aimStrength { return autoPlayEnabled ? 0.07 : %orig; }
+- (float)maxAimSpeed {
     if (speedBoostEnabled) return 300.0;
     return autoPlayEnabled ? 140.0 : %orig;
 }
-- (float)waitTime       { return autoPlayEnabled ? 1.00 : %orig; }
+- (float)waitTime { return autoPlayEnabled ? 1.00 : %orig; }
 %end
 
 %hook AimController
-- (NSString *)spinStyle  { return @"Off"; }
-- (NSString *)aimMode    { return autoPlayEnabled ? @"Guide" : %orig; }
+- (NSString *)spinStyle { return @"Off"; }
+- (NSString *)aimMode { return autoPlayEnabled ? @"Guide" : %orig; }
 - (NSString *)humanization { return @"Med"; }
 - (NSString *)skillLevel { return autoPlayEnabled ? @"Pro" : %orig; }
-- (NSString *)breakMode  { return @"Single"; }
-// بۆ قفڵکردنی گۆشە
-- (float)currentAngle    { return angleLockEnabled ? lockedAngle : %orig; }
+- (NSString *)breakMode { return @"Single"; }
+- (float)currentAngle { return angleLockEnabled ? lockedAngle : %orig; }
 - (void)setAngle:(float)angle { if (!angleLockEnabled) %orig; }
 %end
 
 %hook ShortcutManager
-- (BOOL)shortcutButtonEnabled    { return autoPlayEnabled ? YES : %orig; }
-- (BOOL)bestShotGhostEnabled     { return autoPlayEnabled ? YES : %orig; }
-- (BOOL)autoSelectPocketEnabled  { return autoPlayEnabled ? YES : %orig; }
-- (BOOL)ballInHandSkipEnabled    { return autoPlayEnabled ? YES : %orig; }
-- (BOOL)pauseOnTouchEnabled      { return autoPlayEnabled ? YES : %orig; }
+- (BOOL)shortcutButtonEnabled { return autoPlayEnabled ? YES : %orig; }
+- (BOOL)bestShotGhostEnabled { return autoPlayEnabled ? YES : %orig; }
+- (BOOL)autoSelectPocketEnabled { return autoPlayEnabled ? YES : %orig; }
+- (BOOL)ballInHandSkipEnabled { return autoPlayEnabled ? YES : %orig; }
+- (BOOL)pauseOnTouchEnabled { return autoPlayEnabled ? YES : %orig; }
 %end
 
-// هۆکی بێ فرێکشن (گریمانەیی)
 %hook PhysicsManager
 - (float)friction { return noFrictionEnabled ? 0.0 : %orig; }
 %end
 
-// هۆکی توانای بێسنوور (گریمانەیی)
 %hook ShotPowerManager
 - (float)maxPower { return infinitePowerEnabled ? 999.0 : %orig; }
-- (float)power    { return infinitePowerEnabled ? customPower : %orig; }
+- (float)power { return infinitePowerEnabled ? customPower : %orig; }
 %end
 
-// لابردنی براندی i3rby (وەک خۆی)
 %hook i3rbyStoreViewController
 - (void)viewDidLoad {
     %orig;
@@ -261,7 +251,7 @@ static UIButton *floatingBtn = nil;
 %end
 
 // ================================================================
-// 🚀 لۆدبوونی دروست (بەبێ پشت بەستن بە نۆتیفیکەیشن)
+// 🚀 لۆدکردنی مۆد
 // ================================================================
 %ctor {
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
