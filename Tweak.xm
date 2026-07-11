@@ -4,6 +4,10 @@
 // ⚠️ پێناسەکردنی کلاسەکان (Forward Declarations)
 // ================================================================
 @interface GameManager : NSObject
+- (BOOL)isOnCreatorMode;
+- (BOOL)isOnGoldenShotMode;
+- (BOOL)isOnPracticeMode;
+- (BOOL)isOnTournamentMode;
 @end
 
 @interface GraphicsManager : NSObject
@@ -175,7 +179,7 @@ static SimpleMenu *menuInstance = nil;
 #pragma clang diagnostic pop
 
 // ================================================================
-// 👑 هۆکەکانی لۆگۆس (بەپێی هێڵکاری وێنەکە)
+// 👑 هۆکەکانی لۆگۆس (Logos Hooks)
 // ================================================================
 
 %hook GameManager
@@ -186,32 +190,24 @@ static SimpleMenu *menuInstance = nil;
 %end
 
 %hook GraphicsManager
-// ڕێکخستنی کواڵیتی و ڕوونی هێڵەکان وەک ناو وێنەکە
 - (float)lineOpacity { return aimLineEnabled ? 1.00f : %orig; } 
 - (float)endBallSize { return 1.00f; }
 - (float)pocketRingSize { return 1.00f; }
 - (float)initialPull { return 1.00f; }
-
-// ئەستووری و درێژی هێڵە زیکزاکییەکان
 - (float)lineScaleX { return superLineEnabled ? 3.0f : 1.0f; }
 - (float)lineScaleY { return superLineEnabled ? 3.0f : 1.0f; }
 - (float)lineThickness { return aimLineEnabled ? 1.5f : %orig; }
 %end
 
 %hook PredictionManager
-// چالاککردنی پێشبینیکردنی هێڵی فرە-بەرکەوتن (Multi-Bounce) هاوشێوەی وێنەکە
 - (BOOL)showPredictionLines { return aimLineEnabled; }
 - (BOOL)showOpponentLines { return aimLineEnabled; }
 - (BOOL)showTableOutline { return aimLineEnabled; }
 - (BOOL)showPocketRings { return aimLineEnabled; }
 - (BOOL)showEndDots { return aimLineEnabled; }
 - (BOOL)showPrecisePaths { return aimLineEnabled; }
-
-// زیادکردنی ژمارەی بەرکەوتنەکان بە دیوارەوە (Bounce Limits) بۆ دروستکردنی هێڵی زیکزاکی درێژ
 - (int)maxBounces { return aimLineEnabled ? 6 : %orig; } 
 - (int)maxTargetBounces { return aimLineEnabled ? 4 : %orig; } 
-
-// پیشاندانی هێڵی سەرجەم تۆپەکانی سەر مێزەکە بە جیاوازی (Multi Colored Lines)
 - (BOOL)renderMultiLines { return aimLineEnabled; }
 - (BOOL)calculateAllBallPaths { return aimLineEnabled; }
 %end
