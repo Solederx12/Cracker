@@ -70,7 +70,9 @@ static SimpleMenu *menuInstance = nil;
 + (void)showMenu {
     dispatch_async(dispatch_get_main_queue(), ^{
         @try {
-            if (menuInstance) return;
+            if (menuInstance) {
+                return;
+            }
             
             menuInstance = [[SimpleMenu alloc] initWithFrame:[UIScreen mainScreen].bounds];
             menuInstance.windowLevel = UIWindowLevelAlert + 1.0;
@@ -146,22 +148,60 @@ static SimpleMenu *menuInstance = nil;
     floatingBtn.hidden = YES;
 }
 
-- (void)toggleAim:(UIButton *)sender    { aimLineEnabled = !aimLineEnabled; [self updateButton:sender title:@"Aim Line" on:aimLineEnabled]; }
-- (void)toggleSuper:(UIButton *)sender  { superLineEnabled = !superLineEnabled; [self updateButton:sender title:@"Super Line" on:superLineEnabled]; }
-- (void)toggleAuto:(UIButton *)sender   { autoPlayEnabled = !autoPlayEnabled; [self updateButton:sender title:@"Auto Play" on:autoPlayEnabled]; }
-- (void)toggleBan:(UIButton *)sender    { antiBanEnabled = !antiBanEnabled; [self updateButton:sender title:@"Anti-Ban" on:antiBanEnabled]; }
-- (void)togglePower:(UIButton *)sender  { infinitePowerEnabled = !infinitePowerEnabled; [self updateButton:sender title:@"Infinite Power" on:infinitePowerEnabled]; }
-- (void)toggleSpeed:(UIButton *)sender  { speedBoostEnabled = !speedBoostEnabled; [self updateButton:sender title:@"Speed Boost" on:speedBoostEnabled]; }
-- (void)toggleAngle:(UIButton *)sender  { angleLockEnabled = !angleLockEnabled; [self updateButton:sender title:@"Lock Angle" on:angleLockEnabled]; }
-- (void)toggleFriction:(UIButton *)sender { noFrictionEnabled = !noFrictionEnabled; [self updateButton:sender title:@"No Friction" on:noFrictionEnabled]; }
+- (void)toggleAim:(UIButton *)sender {
+    aimLineEnabled = !aimLineEnabled;
+    [self updateButton:sender title:@"Aim Line" on:aimLineEnabled];
+}
+
+- (void)toggleSuper:(UIButton *)sender {
+    superLineEnabled = !superLineEnabled;
+    [self updateButton:sender title:@"Super Line" on:superLineEnabled];
+}
+
+- (void)toggleAuto:(UIButton *)sender {
+    autoPlayEnabled = !autoPlayEnabled;
+    [self updateButton:sender title:@"Auto Play" on:autoPlayEnabled];
+}
+
+- (void)toggleBan:(UIButton *)sender {
+    antiBanEnabled = !antiBanEnabled;
+    [self updateButton:sender title:@"Anti-Ban" on:antiBanEnabled];
+}
+
+- (void)togglePower:(UIButton *)sender {
+    infinitePowerEnabled = !infinitePowerEnabled;
+    [self updateButton:sender title:@"Infinite Power" on:infinitePowerEnabled];
+}
+
+- (void)toggleSpeed:(UIButton *)sender {
+    speedBoostEnabled = !speedBoostEnabled;
+    [self updateButton:sender title:@"Speed Boost" on:speedBoostEnabled];
+}
+
+- (void)toggleAngle:(UIButton *)sender {
+    angleLockEnabled = !angleLockEnabled;
+    [self updateButton:sender title:@"Lock Angle" on:angleLockEnabled];
+}
+
+- (void)toggleFriction:(UIButton *)sender {
+    noFrictionEnabled = !noFrictionEnabled;
+    [self updateButton:sender title:@"No Friction" on:noFrictionEnabled];
+}
 
 - (void)updateButton:(UIButton *)btn title:(NSString *)title on:(BOOL)on {
     btn.backgroundColor = on ? [UIColor colorWithRed:0.0 green:0.6 blue:0.0 alpha:1.0] : [UIColor grayColor];
     [btn setTitle:[NSString stringWithFormat:@"%@ %@: %@", on ? @"🟢" : @"🔴", title, on ? @"ON" : @"OFF"] forState:UIControlStateNormal];
 }
 
-- (void)hideMenu { mainView.hidden = YES; floatingBtn.hidden = NO; }
-- (void)showFromFloating { mainView.hidden = NO; floatingBtn.hidden = YES; }
+- (void)hideMenu {
+    mainView.hidden = YES;
+    floatingBtn.hidden = NO;
+}
+
+- (void)showFromFloating {
+    mainView.hidden = NO;
+    floatingBtn.hidden = YES;
+}
 
 - (void)drag:(UIPanGestureRecognizer *)g {
     CGPoint t = [g translationInView:self];
@@ -171,7 +211,9 @@ static SimpleMenu *menuInstance = nil;
 
 - (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event {
     UIView *v = [super hitTest:point withEvent:event];
-    if (v == self) return nil;
+    if (v == self) {
+        return nil;
+    }
     return v;
 }
 
@@ -179,79 +221,305 @@ static SimpleMenu *menuInstance = nil;
 #pragma clang diagnostic pop
 
 // ================================================================
-// 👑 هۆکەکانی لۆگۆس (Logos Hooks)
+// 👑 هۆکەکانی لۆگۆس (بە شێوازی سەلامەت بۆ کۆمپایلەر)
 // ================================================================
 
 %hook GameManager
-- (BOOL)isOnCreatorMode { return autoPlayEnabled ? YES : %orig; }
-- (BOOL)isOnGoldenShotMode { return autoPlayEnabled ? YES : %orig; }
-- (BOOL)isOnPracticeMode { return autoPlayEnabled ? YES : %orig; }
-- (BOOL)isOnTournamentMode { return autoPlayEnabled ? YES : %orig; }
+
+- (BOOL)isOnCreatorMode {
+    if (autoPlayEnabled) {
+        return YES;
+    }
+    return %orig;
+}
+
+- (BOOL)isOnGoldenShotMode {
+    if (autoPlayEnabled) {
+        return YES;
+    }
+    return %orig;
+}
+
+- (BOOL)isOnPracticeMode {
+    if (autoPlayEnabled) {
+        return YES;
+    }
+    return %orig;
+}
+
+- (BOOL)isOnTournamentMode {
+    if (autoPlayEnabled) {
+        return YES;
+    }
+    return %orig;
+}
+
 %end
+
 
 %hook GraphicsManager
-- (float)lineOpacity { return aimLineEnabled ? 1.00f : %orig; } 
-- (float)endBallSize { return 1.00f; }
-- (float)pocketRingSize { return 1.00f; }
-- (float)initialPull { return 1.00f; }
-- (float)lineScaleX { return superLineEnabled ? 3.0f : 1.0f; }
-- (float)lineScaleY { return superLineEnabled ? 3.0f : 1.0f; }
-- (float)lineThickness { return aimLineEnabled ? 1.5f : %orig; }
+
+- (float)lineOpacity {
+    if (aimLineEnabled) {
+        return 1.00f;
+    }
+    return %orig;
+}
+
+- (float)endBallSize {
+    return 1.00f;
+}
+
+- (float)pocketRingSize {
+    return 1.00f;
+}
+
+- (float)initialPull {
+    return 1.00f;
+}
+
+- (float)lineScaleX {
+    if (superLineEnabled) {
+        return 3.0f;
+    }
+    return 1.0f;
+}
+
+- (float)lineScaleY {
+    if (superLineEnabled) {
+        return 3.0f;
+    }
+    return 1.0f;
+}
+
+- (float)lineThickness {
+    if (aimLineEnabled) {
+        return 1.5f;
+    }
+    return %orig;
+}
+
 %end
+
 
 %hook PredictionManager
-- (BOOL)showPredictionLines { return aimLineEnabled; }
-- (BOOL)showOpponentLines { return aimLineEnabled; }
-- (BOOL)showTableOutline { return aimLineEnabled; }
-- (BOOL)showPocketRings { return aimLineEnabled; }
-- (BOOL)showEndDots { return aimLineEnabled; }
-- (BOOL)showPrecisePaths { return aimLineEnabled; }
-- (int)maxBounces { return aimLineEnabled ? 6 : %orig; } 
-- (int)maxTargetBounces { return aimLineEnabled ? 4 : %orig; } 
-- (BOOL)renderMultiLines { return aimLineEnabled; }
-- (BOOL)calculateAllBallPaths { return aimLineEnabled; }
+
+- (BOOL)showPredictionLines {
+    return aimLineEnabled;
+}
+
+- (BOOL)showOpponentLines {
+    return aimLineEnabled;
+}
+
+- (BOOL)showTableOutline {
+    return aimLineEnabled;
+}
+
+- (BOOL)showPocketRings {
+    return aimLineEnabled;
+}
+
+- (BOOL)showEndDots {
+    return aimLineEnabled;
+}
+
+- (BOOL)showPrecisePaths {
+    return aimLineEnabled;
+}
+
+- (int)maxBounces {
+    if (aimLineEnabled) {
+        return 6;
+    }
+    return %orig;
+}
+
+- (int)maxTargetBounces {
+    if (aimLineEnabled) {
+        return 4;
+    }
+    return %orig;
+}
+
+- (BOOL)renderMultiLines {
+    return aimLineEnabled;
+}
+
+- (BOOL)calculateAllBallPaths {
+    return aimLineEnabled;
+}
+
 %end
+
 
 %hook AutomationManager
-- (BOOL)isProUnlocked { return autoPlayEnabled ? YES : %orig; }
-- (BOOL)isAdFree { return autoPlayEnabled ? YES : %orig; }
-- (int)proPlanStatus { return autoPlayEnabled ? 1 : %orig; }
-- (float)aimStrength { return autoPlayEnabled ? 0.07f : %orig; }
-- (float)maxAimSpeed {
-    if (speedBoostEnabled) return 300.0f;
-    return autoPlayEnabled ? 140.0f : %orig;
+
+- (BOOL)isProUnlocked {
+    if (autoPlayEnabled) {
+        return YES;
+    }
+    return %orig;
 }
-- (float)waitTime { return autoPlayEnabled ? 1.00f : %orig; }
+
+- (BOOL)isAdFree {
+    if (autoPlayEnabled) {
+        return YES;
+    }
+    return %orig;
+}
+
+- (int)proPlanStatus {
+    if (autoPlayEnabled) {
+        return 1;
+    }
+    return %orig;
+}
+
+- (float)aimStrength {
+    if (autoPlayEnabled) {
+        return 0.07f;
+    }
+    return %orig;
+}
+
+- (float)maxAimSpeed {
+    if (speedBoostEnabled) {
+        return 300.0f;
+    }
+    if (autoPlayEnabled) {
+        return 140.0f;
+    }
+    return %orig;
+}
+
+- (float)waitTime {
+    if (autoPlayEnabled) {
+        return 1.00f;
+    }
+    return %orig;
+}
+
 %end
+
 
 %hook AimController
-- (id)spinStyle { return @"Off"; }
-- (id)aimMode { return autoPlayEnabled ? @"Guide" : %orig; }
-- (id)humanization { return @"Med"; }
-- (id)skillLevel { return autoPlayEnabled ? @"Pro" : %orig; }
-- (id)breakMode { return @"Single"; }
-- (float)currentAngle { return angleLockEnabled ? lockedAngle : %orig; }
-- (void)setAngle:(float)angle { if (!angleLockEnabled) %orig; }
+
+- (id)spinStyle {
+    return @"Off";
+}
+
+- (id)aimMode {
+    if (autoPlayEnabled) {
+        return @"Guide";
+    }
+    return %orig;
+}
+
+- (id)humanization {
+    return @"Med";
+}
+
+- (id)skillLevel {
+    if (autoPlayEnabled) {
+        return @"Pro";
+    }
+    return %orig;
+}
+
+- (id)breakMode {
+    return @"Single";
+}
+
+- (float)currentAngle {
+    if (angleLockEnabled) {
+        return lockedAngle;
+    }
+    return %orig;
+}
+
+- (void)setAngle:(float)angle {
+    if (!angleLockEnabled) {
+        %orig;
+    }
+}
+
 %end
+
 
 %hook ShortcutManager
-- (BOOL)shortcutButtonEnabled { return autoPlayEnabled ? YES : %orig; }
-- (BOOL)bestShotGhostEnabled { return autoPlayEnabled ? YES : %orig; }
-- (BOOL)autoSelectPocketEnabled { return autoPlayEnabled ? YES : %orig; }
-- (BOOL)ballInHandSkipEnabled { return autoPlayEnabled ? YES : %orig; }
-- (BOOL)pauseOnTouchEnabled { return autoPlayEnabled ? YES : %orig; }
+
+- (BOOL)shortcutButtonEnabled {
+    if (autoPlayEnabled) {
+        return YES;
+    }
+    return %orig;
+}
+
+- (BOOL)bestShotGhostEnabled {
+    if (autoPlayEnabled) {
+        return YES;
+    }
+    return %orig;
+}
+
+- (BOOL)autoSelectPocketEnabled {
+    if (autoPlayEnabled) {
+        return YES;
+    }
+    return %orig;
+}
+
+- (BOOL)ballInHandSkipEnabled {
+    if (autoPlayEnabled) {
+        return YES;
+    }
+    return %orig;
+}
+
+- (BOOL)pauseOnTouchEnabled {
+    if (autoPlayEnabled) {
+        return YES;
+    }
+    return %orig;
+}
+
 %end
+
 
 %hook PhysicsManager
-- (float)friction { return noFrictionEnabled ? 0.0f : %orig; }
+
+- (float)friction {
+    if (noFrictionEnabled) {
+        return 0.0f;
+    }
+    return %orig;
+}
+
 %end
+
 
 %hook ShotPowerManager
-- (float)maxPower { return infinitePowerEnabled ? 999.0f : %orig; }
-- (float)power { return infinitePowerEnabled ? customPower : %orig; }
+
+- (float)maxPower {
+    if (infinitePowerEnabled) {
+        return 999.0f;
+    }
+    return %orig;
+}
+
+- (float)power {
+    if (infinitePowerEnabled) {
+        return customPower;
+    }
+    return %orig;
+}
+
 %end
 
+
 %hook i3rbyStoreViewController
+
 - (void)viewDidLoad {
     %orig;
     @try {
@@ -265,6 +533,7 @@ static SimpleMenu *menuInstance = nil;
         }
     } @catch (NSException *e) {}
 }
+
 %end
 
 // ================================================================
