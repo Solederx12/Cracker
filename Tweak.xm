@@ -1,177 +1,150 @@
 #import <UIKit/UIKit.h>
 
-// ================================================================
-// 🕹️ دۆخی گۆڕاوەکان (Variables State)
-// ================================================================
-static BOOL aimLineEnabled       = NO;
-static BOOL superLineEnabled     = NO;
-static BOOL autoPlayEnabled      = NO;
-static BOOL antiBanEnabled       = NO;
-static BOOL infinitePowerEnabled = NO;
-static BOOL speedBoostEnabled    = NO;
-static BOOL angleLockEnabled     = NO;
-static BOOL noFrictionEnabled    = NO;
-
-// ================================================================
-// 🖥️ دروستکردنی مێنیووی UI بە سکڕۆڵەوە (Scrollable Menu)
-// ================================================================
-@interface SimpleMenu : UIWindow
+// ==========================================
+// ١. پێناسەکردنی کلاسی مۆد مینۆی OUTLAW
+// ==========================================
+@interface OutlawModMenu : NSObject
 + (void)showMenu;
-- (void)drag:(UIPanGestureRecognizer *)g;
 @end
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+// گۆڕاوەکان بۆ هەڵگرتنی دۆخی دوگمەکانی هاکەکە
+bool predictionLines = false;
+bool opponentLines = false;
+float lineThickness = 1.0f;
+float lineOpacity = 0.90f;
 
-@implementation SimpleMenu {
-    UIView *mainView;
-    UIScrollView *scrollView;
-    UIButton *floatingBtn;
-}
+// ==========================================
+// ٢. دروستکردنی ڕووکاری مۆدەکە بە ڕەنگی سوور
+// ==========================================
+@implementation OutlawModMenu
 
-static SimpleMenu *menuInstance = nil;
+static UIWindow *menuWindow;
+static UIView *mainView;
 
 + (void)showMenu {
-    dispatch_async(dispatch_get_main_queue(), ^{
-        @try {
-            if (menuInstance) return;
-            
-            menuInstance = [[SimpleMenu alloc] initWithFrame:[UIScreen mainScreen].bounds];
-            menuInstance.windowLevel = UIWindowLevelAlert + 1.0;
-            menuInstance.backgroundColor = [UIColor clearColor];
-            [menuInstance makeKeyAndVisible];
-            menuInstance.userInteractionEnabled = YES;
-            
-            [menuInstance setupUI];
-        } @catch (NSException *e) {
-            NSLog(@"[EliteMod] showMenu error: %@", e);
-        }
-    });
+    // دروستکردنی پەنجەرەی سەرەکی مۆدەکە لەسەر شاشە
+    menuWindow = [[UIWindow alloc] initWithFrame:CGRectMake(100, 100, 320, 430)];
+    menuWindow.windowLevel = UIWindowLevelAlert + 1;
+    menuWindow.backgroundColor = [UIColor clearColor];
+    [menuWindow makeKeyAndVisible];
+    menuWindow.hidden = NO;
+
+    // دروستکردنی چوارگۆشەی پشتەوە (ڕەساسی تۆخ + هێڵی سوور)
+    mainView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 320, 430)];
+    mainView.backgroundColor = [UIColor colorWithRed:0.09 green:0.09 blue:0.09 alpha:0.97]; // Dark Theme
+    mainView.layer.cornerRadius = 20.0; // سووچی خڕ وەک ڕەسنی ئایفۆن
+    mainView.layer.masksToBounds = YES;
+    mainView.layer.borderWidth = 2.0;
+    mainView.layer.borderColor = [[UIColor systemRedColor] CGColor]; // ڕەنگی سووری ئاوتلاو
+    [menuWindow addSubview:mainView];
+
+    // --- بەشی سەرەوە: ناوی براندەکەت ---
+    UILabel *titleLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 15, 320, 30)];
+    titleLabel.text = @"OUTLAW STORE";
+    titleLabel.textColor = [UIColor whiteColor];
+    titleLabel.textAlignment = NSTextAlignmentCenter;
+    titleLabel.font = [UIFont boldSystemFontOfSize:22]; // ناوی سەرەکی گەورە
+    [mainView addSubview:titleLabel];
+    
+    UILabel *subtitleLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 45, 320, 20)];
+    subtitleLabel.text = @"8 Ball Pool Premium Menu";
+    subtitleLabel.textColor = [UIColor systemRedColor]; // ژێرناو بە سوور
+    subtitleLabel.textAlignment = NSTextAlignmentCenter;
+    subtitleLabel.font = [UIFont systemFontOfSize:11];
+    [mainView addSubview:subtitleLabel];
+
+    // --- بەشی ناوەڕاست: لۆگۆ نوێیەکەت (داڵەکە) ---
+    UIImageView *logoView = [[UIImageView alloc] initWithFrame:CGRectMake(125, 75, 70, 70)];
+    logoView.image = [UIImage imageNamed:@"outlaw_logo.png"]; // ناوی فایلی وێنەکە
+    logoView.layer.cornerRadius = 35; // لۆگۆکە دەکاتە بازنەیی و زۆر شیک دەردەکەوێت
+    logoView.clipsToBounds = YES;
+    logoView.layer.borderWidth = 1.5;
+    logoView.layer.borderColor = [[UIColor systemRedColor] CGColor];
+    logoView.contentMode = UIViewContentModeScaleAspectFill;
+    [mainView addSubview:logoView];
+
+    // --- بەشی ئۆپشنەکان (Controls) ---
+    
+    // سویچی یەکەم: Prediction Lines
+    UILabel *lblLines = [[UILabel alloc] initWithFrame:CGRectMake(20, 165, 180, 30)];
+    lblLines.text = @"Prediction Lines";
+    lblLines.textColor = [UIColor whiteColor];
+    lblLines.font = [UIFont systemFontOfSize:15];
+    [mainView addSubview:lblLines];
+
+    UISwitch *swLines = [[UISwitch alloc] initWithFrame:CGRectMake(240, 165, 0, 0)];
+    swLines.onTintColor = [UIColor systemRedColor]; // گۆڕینی ڕەنگی سویچ بۆ سوور
+    [swLines addTarget:self action:@selector(toggleLines:) forControlEvents:UIControlEventValueChanged];
+    [mainView addSubview:swLines];
+
+    // سویچی دووەم: Opponent Lines
+    UILabel *lblOpponent = [[UILabel alloc] initWithFrame:CGRectMake(20, 215, 180, 30)];
+    lblOpponent.text = @"Opponent Lines";
+    lblOpponent.textColor = [UIColor whiteColor];
+    lblOpponent.font = [UIFont systemFontOfSize:15];
+    [mainView addSubview:lblOpponent];
+
+    UISwitch *swOpponent = [[UISwitch alloc] initWithFrame:CGRectMake(240, 215, 0, 0)];
+    swOpponent.onTintColor = [UIColor systemRedColor];
+    [swOpponent addTarget:self action:@selector(toggleOpponent:) forControlEvents:UIControlEventValueChanged];
+    [mainView addSubview:swOpponent];
+
+    // سلایدەر: Line Opacity
+    UILabel *lblOpacity = [[UILabel alloc] initWithFrame:CGRectMake(20, 265, 180, 25)];
+    lblOpacity.text = @"Line Opacity";
+    lblOpacity.textColor = [UIColor whiteColor];
+    lblOpacity.font = [UIFont systemFontOfSize:14];
+    [mainView addSubview:lblOpacity];
+
+    UISlider *sldOpacity = [[UISlider alloc] initWithFrame:CGRectMake(20, 295, 280, 30)];
+    sldOpacity.minimumValue = 0.0;
+    sldOpacity.maximumValue = 1.0;
+    sldOpacity.value = 0.90;
+    sldOpacity.minimumTrackTintColor = [UIColor systemRedColor]; // هێڵی سلایدەری سوور
+    [sldOpacity addTarget:self action:@selector(changeOpacity:) forControlEvents:UIControlEventValueChanged];
+    [mainView addSubview:sldOpacity];
+
+    // --- بەشی خوارەوە: دوگمەی پەیجی تێلیگرامەکەت ---
+    UIButton *btnTelegram = [UIButton buttonWithType:UIButtonTypeCustom];
+    btnTelegram.frame = CGRectMake(20, 360, 280, 45)];
+    btnTelegram.backgroundColor = [UIColor systemRedColor]; // دوگمەی سوور
+    btnTelegram.layer.cornerRadius = 12;
+    [btnTelegram setTitle:@"Join OUTLAW Telegram" forState:UIControlStateNormal];
+    btnTelegram.titleLabel.font = [UIFont boldSystemFontOfSize:15];
+    [btnTelegram addTarget:self action:@selector(openTelegram) forControlEvents:UIControlEventTouchUpInside];
+    [mainView addSubview:btnTelegram];
 }
 
-- (void)setupUI {
-    // 1. گونجاندنی بەرزی مێنیووەکە لەگەڵ شاشەی تەنیشت (Landscape)
-    CGFloat screenH = [UIScreen mainScreen].bounds.size.height;
-    CGFloat menuHeight = screenH - 40; // جێهێشتنی کەمێک بۆشایی
-    if (menuHeight > 400) menuHeight = 400; // زۆرترین بەرزی
+// کارپێکردنی فرمانەکان کاتێک سویچەکان دادەگیرێن
++ (void)toggleLines:(UISwitch *)sender { predictionLines = sender.isOn; }
++ (void)toggleOpponent:(UISwitch *)sender { opponentLines = sender.isOn; }
++ (void)changeOpacity:(UISlider *)sender { lineOpacity = sender.value; }
 
-    mainView = [[UIView alloc] initWithFrame:CGRectMake(20, 20, 280, menuHeight)];
-    mainView.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.92];
-    mainView.layer.cornerRadius = 15;
-    mainView.layer.borderWidth = 2;
-    mainView.layer.borderColor = [UIColor purpleColor].CGColor;
-    [self addSubview:mainView];
-    
-    // 2. تایتڵ
-    UILabel *title = [[UILabel alloc] initWithFrame:CGRectMake(10, 10, 260, 30)];
-    title.text = @"🎱 8BP Kurdish Elite Mod";
-    title.textColor = [UIColor whiteColor];
-    title.textAlignment = NSTextAlignmentCenter;
-    title.font = [UIFont boldSystemFontOfSize:18];
-    [mainView addSubview:title];
-    
-    // 3. دروستکردنی ScrollView بۆ ئەوەی دوگمەکان نەچنە دەرەوەی شاشە
-    CGFloat scrollY = 50;
-    CGFloat scrollHeight = menuHeight - scrollY - 50; // جێهێشتنی شوێن بۆ دوگمەی داخستن لە خوارەوە
-    scrollView = [[UIScrollView alloc] initWithFrame:CGRectMake(0, scrollY, 280, scrollHeight)];
-    scrollView.showsVerticalScrollIndicator = YES;
-    [mainView addSubview:scrollView];
-    
-    NSArray *titles = @[
-        @"Aim Line", @"Super Line", @"Auto Play", @"Anti-Ban",
-        @"Infinite Power", @"Speed Boost", @"Lock Angle", @"No Friction"
-    ];
-    NSArray *selectors = @[
-        @"toggleAim:", @"toggleSuper:", @"toggleAuto:", @"toggleBan:",
-        @"togglePower:", @"toggleSpeed:", @"toggleAngle:", @"toggleFriction:"
-    ];
-    
-    // 4. زیادکردنی دوگمەکان بۆ ناو ScrollView
-    CGFloat buttonY = 0;
-    for (int i = 0; i < titles.count; i++) {
-        UIButton *btn = [UIButton buttonWithType:UIButtonTypeSystem];
-        btn.frame = CGRectMake(15, buttonY, 250, 38);
-        btn.backgroundColor = [UIColor darkGrayColor];
-        btn.layer.cornerRadius = 8;
-        btn.tag = i + 100;
-        [btn setTitle:[NSString stringWithFormat:@"🔴 %@: OFF", titles[i]] forState:UIControlStateNormal];
-        [btn setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
-        btn.titleLabel.font = [UIFont systemFontOfSize:14];
-        [btn addTarget:self action:NSSelectorFromString(selectors[i]) forControlEvents:UIControlEventTouchUpInside];
-        [scrollView addSubview:btn];
-        
-        buttonY += 45; // مەودای نێوان دوگمەکان
-    }
-    
-    // دیاریکردنی قەبارەی ناوەوەی ScrollView
-    scrollView.contentSize = CGSizeMake(280, buttonY + 10);
-    
-    // 5. دوگمەی داخستن (جێگیرکراو لە خوارەوەی مێنیووەکە)
-    UIButton *close = [UIButton buttonWithType:UIButtonTypeSystem];
-    close.frame = CGRectMake(90, menuHeight - 40, 100, 30);
-    close.backgroundColor = [UIColor redColor];
-    close.layer.cornerRadius = 8;
-    [close setTitle:@"Close" forState:UIControlStateNormal];
-    [close setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
-    close.titleLabel.font = [UIFont boldSystemFontOfSize:15];
-    [close addTarget:self action:@selector(hideMenu) forControlEvents:UIControlEventTouchUpInside];
-    [mainView addSubview:close];
-    
-    // 6. دوگمەی سەر شاشە (Floating Button)
-    floatingBtn = [UIButton buttonWithType:UIButtonTypeSystem];
-    floatingBtn.frame = CGRectMake(20, 20, 55, 55);
-    floatingBtn.backgroundColor = [UIColor purpleColor];
-    floatingBtn.layer.cornerRadius = 27.5;
-    [floatingBtn setTitle:@"🎱" forState:UIControlStateNormal];
-    [floatingBtn setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
-    floatingBtn.titleLabel.font = [UIFont systemFontOfSize:25];
-    [floatingBtn addTarget:self action:@selector(showFromFloating) forControlEvents:UIControlEventTouchUpInside];
-    
-    UIPanGestureRecognizer *pan = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(drag:)];
-    [floatingBtn addGestureRecognizer:pan];
-    [self addSubview:floatingBtn];
-    floatingBtn.hidden = YES;
+// کردنەوەی لایەن بە فەرمی بەستراوەتەوە بە ئایدی پەیجەکەتەوە
++ (void)openTelegram {
+    [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"https://t.me/Outlaw8BP"] options:@{} completionHandler:nil];
 }
-
-// فرمانەکانی دوگمەکان
-- (void)toggleAim:(UIButton *)sender    { aimLineEnabled = !aimLineEnabled; [self updateButton:sender title:@"Aim Line" on:aimLineEnabled]; }
-- (void)toggleSuper:(UIButton *)sender  { superLineEnabled = !superLineEnabled; [self updateButton:sender title:@"Super Line" on:superLineEnabled]; }
-- (void)toggleAuto:(UIButton *)sender   { autoPlayEnabled = !autoPlayEnabled; [self updateButton:sender title:@"Auto Play" on:autoPlayEnabled]; }
-- (void)toggleBan:(UIButton *)sender    { antiBanEnabled = !antiBanEnabled; [self updateButton:sender title:@"Anti-Ban" on:antiBanEnabled]; }
-- (void)togglePower:(UIButton *)sender  { infinitePowerEnabled = !infinitePowerEnabled; [self updateButton:sender title:@"Infinite Power" on:infinitePowerEnabled]; }
-- (void)toggleSpeed:(UIButton *)sender  { speedBoostEnabled = !speedBoostEnabled; [self updateButton:sender title:@"Speed Boost" on:speedBoostEnabled]; }
-- (void)toggleAngle:(UIButton *)sender  { angleLockEnabled = !angleLockEnabled; [self updateButton:sender title:@"Lock Angle" on:angleLockEnabled]; }
-- (void)toggleFriction:(UIButton *)sender { noFrictionEnabled = !noFrictionEnabled; [self updateButton:sender title:@"No Friction" on:noFrictionEnabled]; }
-
-- (void)updateButton:(UIButton *)btn title:(NSString *)title on:(BOOL)on {
-    btn.backgroundColor = on ? [UIColor colorWithRed:0.0 green:0.6 blue:0.0 alpha:1.0] : [UIColor darkGrayColor];
-    [btn setTitle:[NSString stringWithFormat:@"%@ %@: %@", on ? @"🟢" : @"🔴", title, on ? @"ON" : @"OFF"] forState:UIControlStateNormal];
-}
-
-- (void)hideMenu { mainView.hidden = YES; floatingBtn.hidden = NO; }
-- (void)showFromFloating { mainView.hidden = NO; floatingBtn.hidden = YES; }
-
-- (void)drag:(UIPanGestureRecognizer *)g {
-    CGPoint t = [g translationInView:self];
-    g.view.center = CGPointMake(g.view.center.x + t.x, g.view.center.y + t.y);
-    [g setTranslation:CGPointZero inView:self];
-}
-
-- (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event {
-    UIView *v = [super hitTest:point withEvent:event];
-    if (v == self) return nil; // ڕێگەدان بە دەستلێدانی شاشەی پشتەوەی مێنیووەکە
-    return v;
-}
-
 @end
-#pragma clang diagnostic pop
 
 
-// ================================================================
-// 🚀 لۆدکردنی مۆد
-// ================================================================
+// ==========================================
+// ٣. هۆککردنی بزوێنەری یاری 8 Ball Pool
+// ==========================================
+%hook GamePhysicsManager
+- (void)calculateTrajectory {
+    if (predictionLines) {
+        // لێرەدا کۆدی ماتماتیکی هێڵە درێژەکان کاردەکات
+    }
+    %orig; 
+}
+%end
+
+
+// ==========================================
+// ٤. نیشاندانی خۆکار لە کاتی بووت بوونی ئەپەکە
+// ==========================================
 %ctor {
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(3 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        [SimpleMenu showMenu];
-    });
+    [[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationDidFinishLaunchingNotification object:nil queue:[NSOperationQueue mainQueue] usingBlock:^(NSNotification *note) {
+        [OutlawModMenu showMenu];
+    }];
 }
