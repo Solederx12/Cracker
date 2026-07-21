@@ -1,7 +1,7 @@
 #import <UIKit/UIKit.h>
 #import <mach-o/dyld.h>
 #include <objc/runtime.h>
-#import <libspector/spector.h>  // ✅ بەکارهێنانی libspector
+#import "dobby.h" // ✅ بەکارهێنانی Dobby بۆ بێ جەیڵبرێک
 
 // ================================================================
 // 📌 ئۆفسێتەکان
@@ -16,16 +16,16 @@
 #define OFFSET_SHOT_POWER            0x0
 #define OFFSET_TABLE_COLOR           0x0
 #define OFFSET_BALL_POSITION         0x0
-#define OFFSET_WIDE_GUIDE_LINE       0x0 // ئۆفسێتی نوێ بۆ Wide Guide Line پێویستە
-#define OFFSET_LINE_THICKNESS        0x0 // ئۆفسێتی نوێ بۆ ئەستووری هێڵ پێویستە
-#define OFFSET_PREDICTION_PATH       0x0 // ئۆفسێتی نوێ بۆ پیشاندانی ڕێڕەوی تۆپەکان پێویستە
+#define OFFSET_WIDE_GUIDE_LINE       0x0 
+#define OFFSET_LINE_THICKNESS        0x0 
+#define OFFSET_PREDICTION_PATH       0x0 
 
 #define OFFSET_VISUAL_CUE            0x4d0
 #define OFFSET_VISUAL_GUIDE          0x3b8
 #define OFFSET_AIM_ANGLE             0x28
 
 // ================================================================
-// 🕹️ دۆخی دوگمەکان (تایبەتمەندییە نوێیەکانیش زیاد کراون)
+// 🕹️ دۆخی دوگمەکان
 // ================================================================
 static BOOL aimLineEnabled        = NO;
 static BOOL superLineEnabled      = NO;
@@ -34,15 +34,15 @@ static BOOL antiBanEnabled        = NO;
 static BOOL infinitePowerEnabled  = NO;
 static BOOL angleLockEnabled      = NO;
 static BOOL noFrictionEnabled     = NO;
-static BOOL wideGuideLineEnabled  = NO; // تایبەتمەندی هێڵی فراوان
-static BOOL predictionPathEnabled = NO; // تایبەتمەندی ڕێڕەوی پێشبینیکراو
+static BOOL wideGuideLineEnabled  = NO; 
+static BOOL predictionPathEnabled = NO; 
 
 // ================================================================
 // 📊 پەرامیتەرەکان
 // ================================================================
 static float lockedAngle = 0.785;
 static float customPower = 0.8;
-static float customLineThickness = 1.0; // ئەستووری بنەڕەتی وەک ئەوەی لە فایلە کۆنەکەدا هەبوو
+static float customLineThickness = 1.0; 
 
 // ================================================================
 // 🛠️ Hookە سەرەکییەکان
@@ -67,17 +67,13 @@ bool new_isAimCorrect(void *instance) {
                     float *linePtr = (float *)((uintptr_t)(*vgPtr) + OFFSET_AIM_LINE_LENGTH);
                     float *powerPtr = (float *)((uintptr_t)instance + OFFSET_CUE_POWER);
                     
-                    // لۆژیکی Wide Guide Line و ئەستووری
                     if (wideGuideLineEnabled) {
-                         // ئەگەر ئۆفسێتی wideGuideLine هەبێت، لێرەدا بەهاکەی دەگۆڕدرێت
                          bool *wideGuidePtr = (bool *)((uintptr_t)(*vgPtr) + OFFSET_WIDE_GUIDE_LINE);
                          if (wideGuidePtr) *wideGuidePtr = true;
                          
-                         // نموونەیەک بۆ گۆڕینی ئەستووری
                          float *thicknessPtr = (float *)((uintptr_t)(*vgPtr) + OFFSET_LINE_THICKNESS);
-                         if(thicknessPtr) *thicknessPtr = customLineThickness + 2.0; // ئەستوورتر دەکرێت
+                         if(thicknessPtr) *thicknessPtr = customLineThickness + 2.0; 
                     } else {
-                         // گەڕاندنەوەی باری ئاسایی
                          bool *wideGuidePtr = (bool *)((uintptr_t)(*vgPtr) + OFFSET_WIDE_GUIDE_LINE);
                          if (wideGuidePtr) *wideGuidePtr = false;
                          
@@ -123,7 +119,7 @@ bool new_antiBan(void *instance) {
     return orig_antiBan ? orig_antiBan(instance) : YES;
 }
 
-// ----- ۴. ڕووداوی ئامانج (گۆشە، قوەت و ڕێڕەوی پێشبینیکراو) -----
+// ----- ۴. ڕووداوی ئامانج -----
 void* new_aimEvent(void *instance) {
     @try {
         if (instance) {
@@ -136,7 +132,6 @@ void* new_aimEvent(void *instance) {
                         *anglePtr = lockedAngle;
                     }
                     
-                    // لۆژیکی Prediction Path
                     if (predictionPathEnabled) {
                          bool *predictionPtr = (bool *)((uintptr_t)(*vgPtr) + OFFSET_PREDICTION_PATH);
                          if (predictionPtr) *predictionPtr = true;
@@ -208,20 +203,18 @@ static UIButton *floatingBtn = nil;
             title.font = [UIFont boldSystemFontOfSize:18];
             [mainView addSubview:title];
             
-            // دروستکردنی ScrollView بۆ ئەوەی دوگمەی زۆر جێی ببێتەوە
             scrollView = [[UIScrollView alloc] initWithFrame:CGRectMake(0, 50, 280, 370)];
             [mainView addSubview:scrollView];
             
-            // لیستەی دوگمەکان (نوێیەکانمان بۆ زیاد کردووە)
             NSArray *titles = @[
                 @"Aim Line", @"Super Line", @"Auto Play", @"Anti-Ban",
                 @"Infinite Power", @"Lock Angle", @"No Friction",
-                @"Wide Guide Line", @"Prediction Path" // دوگمە نوێیەکان
+                @"Wide Guide Line", @"Prediction Path" 
             ];
             NSArray *selectors = @[
                 @"toggleAim:", @"toggleSuper:", @"toggleAuto:", @"toggleBan:",
                 @"togglePower:", @"toggleAngle:", @"toggleFriction:",
-                @"toggleWideGuide:", @"togglePrediction:" // ئەکشنە نوێیەکان
+                @"toggleWideGuide:", @"togglePrediction:" 
             ];
             
             CGFloat contentHeight = 0;
@@ -311,7 +304,7 @@ static UIButton *floatingBtn = nil;
 #pragma clang diagnostic pop
 
 // ================================================================
-// 🚀 لۆدبوونی مۆد (بە libspector)
+// 🚀 لۆدبوونی مۆد (بە DobbyHook)
 // ================================================================
 __attribute__((constructor)) static void initMod() {
     [[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationDidFinishLaunchingNotification
@@ -322,16 +315,17 @@ __attribute__((constructor)) static void initMod() {
             @try {
                 uintptr_t base = (uintptr_t)_dyld_get_image_header(0);
                 if (base) {
+                    // بەکارهێنانی DobbyHook لەبری spector_hook
                     if (OFFSET_AIM_EVENT != 0)
-                        spector_hook((void *)(base + OFFSET_AIM_EVENT), (void *)new_aimEvent, (void **)&orig_aimEvent);
+                        DobbyHook((void *)(base + OFFSET_AIM_EVENT), (void *)new_aimEvent, (void **)&orig_aimEvent);
                     if (OFFSET_ANTI_BAN != 0)
-                        spector_hook((void *)(base + OFFSET_ANTI_BAN), (void *)new_antiBan, (void **)&orig_antiBan);
+                        DobbyHook((void *)(base + OFFSET_ANTI_BAN), (void *)new_antiBan, (void **)&orig_antiBan);
                     if (OFFSET_AUTO_PLAY != 0)
-                        spector_hook((void *)(base + OFFSET_AUTO_PLAY), (void *)new_autoPlay, (void **)&orig_autoPlay);
+                        DobbyHook((void *)(base + OFFSET_AUTO_PLAY), (void *)new_autoPlay, (void **)&orig_autoPlay);
                     if (OFFSET_GAME_MANAGER != 0)
-                        spector_hook((void *)(base + OFFSET_GAME_MANAGER), (void *)new_isAimCorrect, (void **)&orig_isAimCorrect);
+                        DobbyHook((void *)(base + OFFSET_GAME_MANAGER), (void *)new_isAimCorrect, (void **)&orig_isAimCorrect);
                     
-                    NSLog(@"[EliteMod] ✅ Hooks installed with libspector!");
+                    NSLog(@"[EliteMod] ✅ Hooks installed with Dobby!");
                 }
                 [SimpleMenu showMenu];
             } @catch (NSException *e) {
