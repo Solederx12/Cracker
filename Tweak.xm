@@ -39,7 +39,7 @@ static const uintptr_t kVisualGuideOffset = 0x3b8;
 static const uintptr_t kAimAngleOffset = 0x28;
 static const uintptr_t kAimLineLengthOffset = 0x0;
 static const uintptr_t kCuePowerOffset = 0x0;
-static const uintptr_t kWideGuideLineOffset = 0x0;
+static const uintptr_t kWideGuideLineOffset = 0x4FE628;
 static const uintptr_t kLineThicknessOffset = 0x0;
 static const uintptr_t kPredictionPathOffset = 0x0;
 
