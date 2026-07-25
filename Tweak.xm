@@ -44,10 +44,6 @@ static const uintptr_t kLineThicknessOffset = 0x0;
 static const uintptr_t kPredictionPathOffset = 0x0;
 
 static const uintptr_t kDisasmVisualCueOffset = 0x728;
-static const uintptr_t kDisasmBallSpeedOffset = 0xec8;
-static const uintptr_t kDisasmShotPowerOffset = 0xe8c;
-static const uintptr_t kDisasmFrictionOffset = 0x1e8;
-static const uintptr_t kDisasmAimEventOffset = 0x1a4;
 
 // ================================================================
 // 🪝 Original implementations
@@ -67,11 +63,6 @@ static IMP orig_setTableColor = NULL;
 static void *ReadPointerAtOffset(void *object, uintptr_t offset) {
     if (!object) return NULL;
     return *(void **)((uintptr_t)object + offset);
-}
-
-static float ReadFloatAtOffset(void *object, uintptr_t offset) {
-    if (!object) return 0.0f;
-    return *(float *)((uintptr_t)object + offset);
 }
 
 static void WriteFloatAtOffset(void *object, uintptr_t offset, float value) {
