@@ -21,41 +21,70 @@ static float customPower = 0.8f;
 static float customLineThickness = 1.0f;
 
 // ================================================================
-// 🧭 Extracted method names and offsets from the provided dump
+// 🧭 Real offsets extracted from disassembly (fun.ction.txt)
 // ================================================================
-static const char *kTargetMethodNames[] = {
-    "isAimCorrect",
-    "antiBan",
-    "autoPlay",
-    "aimEvent",
-    "getBallSpeed",
-    "getShotPower",
-    "getFriction",
-    "setTableColor:"
-};
 
-static const uintptr_t kVisualCueOffset = 0x4d0;
-static const uintptr_t kVisualGuideOffset = 0x3b8;
-static const uintptr_t kAimAngleOffset = 0x28;
-static const uintptr_t kAimLineLengthOffset = 0x0;
-static const uintptr_t kCuePowerOffset = 0x0;
-static const uintptr_t kWideGuideLineOffset = 0x4FE628;
-static const uintptr_t kLineThicknessOffset = 0x0;
-static const uintptr_t kPredictionPathOffset = 0x0;
+// GameManager::visualCue → ldrsw x8, [x8, #0x728]
+static const uintptr_t kGameManager_VisualCue_Offset = 0x728;
 
-static const uintptr_t kDisasmVisualCueOffset = 0x728;
+// Table::frictionProperties → ldrsw x8, [x8, #0x1e8]
+static const uintptr_t kTable_FrictionProperties_Offset = 0x1E8;
+
+// VisualCue::setMaxCuePowerOffset: → ldrsw x8, [x8, #0x48]
+static const uintptr_t kVisualCue_MaxCuePowerOffset = 0x48;
+
+// UserSettingsManager::wideGuideline → ldrb w8, [x0, #0x13]
+static const uintptr_t kUserSettings_WideGuideline_Offset = 0x13;
+
+// BallPropertiesCue::getBalls → ldr x0, [x0, #0x8]
+static const uintptr_t kBallProperties_Balls_Offset = 0x8;
+
+// QuickFireGameOverPopup::getBallsPotted → ldrsw x8, [x8, #0xec8]
+static const uintptr_t kQuickFire_BallsPotted_Offset = 0xEC8;
+
+// GameplayTutorial::isAimCorrect → mov w0, #0x0 (returns NO)
+// Table::getBallByNumber: → complex function at 0x10009a0dc
+// BallManager::getBallPositionForNumber: → at 0x100134720
+// GameHUD::getBallPositionOnCounterForNumber: → at 0x1002bd5c0
+
+// ================================================================
+// 🎯 Real class names from disassembly
+// ================================================================
+static const char *kClass_GameManager = "GameManager";
+static const char *kClass_GameplayTutorial = "GameplayTutorial";
+static const char *kClass_Table = "Table";
+static const char *kClass_BallPropertiesCue = "BallPropertiesCue";
+static const char *kClass_VisualCue = "VisualCue";
+static const char *kClass_UserSettingsManager = "UserSettingsManager";
+static const char *kClass_BallManager = "BallManager";
+static const char *kClass_GameHUD = "GameHUD";
+static const char *kClass_AimEvent = "AimEvent";
+static const char *kClass_QuickFireGameOverPopup = "QuickFireGameOverPopup";
+
+// Anti-cheat / integrity classes
+static const char *kClass_AFSDKChecksum = "AFSDKChecksum";
+static const char *kClass_PAGDeviceHelper = "PAGDeviceHelper";
+static const char *kClass_STKDevice = "STKDevice";
 
 // ================================================================
 // 🪝 Original implementations
 // ================================================================
 static IMP orig_isAimCorrect = NULL;
-static IMP orig_antiBan = NULL;
-static IMP orig_autoPlay = NULL;
-static IMP orig_aimEvent = NULL;
-static IMP orig_getBallSpeed = NULL;
-static IMP orig_getShotPower = NULL;
-static IMP orig_getFriction = NULL;
-static IMP orig_setTableColor = NULL;
+static IMP orig_visualCue = NULL;
+static IMP orig_hideGuidelinesMode = NULL;
+static IMP orig_getAimEvent = NULL;
+static IMP orig_updateInfoShotPower = NULL;
+static IMP orig_getBalls = NULL;
+static IMP orig_getBallByNumber = NULL;
+static IMP orig_frictionProperties = NULL;
+static IMP orig_getBallPositionForNumber = NULL;
+static IMP orig_setMaxCuePowerOffset = NULL;
+static IMP orig_wideGuideline = NULL;
+static IMP orig_setWideGuideline = NULL;
+static IMP orig_bu_isJailBroken = NULL;
+static IMP orig_isJailbroken = NULL;
+static IMP orig_calculateV2SanityFlags = NULL;
+static IMP orig_calculateV2Value = NULL;
 
 // ================================================================
 // 🧠 Runtime hook helpers
@@ -75,19 +104,46 @@ static void WriteBoolAtOffset(void *object, uintptr_t offset, BOOL value) {
     *(BOOL *)((uintptr_t)object + offset) = value;
 }
 
+static float ReadFloatAtOffset(void *object, uintptr_t offset) {
+    if (!object) return 0.0f;
+    return *(float *)((uintptr_t)object + offset);
+}
+
+static BOOL ReadBoolAtOffset(void *object, uintptr_t offset) {
+    if (!object) return NO;
+    return *(BOOL *)((uintptr_t)object + offset);
+}
+
+// Hook a specific class + selector (more reliable than scanning all classes)
+static BOOL HookClassSelector(const char *className, const char *selName,
+                              IMP replacement, IMP *original) {
+    Class cls = objc_getClass(className);
+    if (!cls) {
+        NSLog(@"[EliteMod] ❌ Class not found: %s", className);
+        return NO;
+    }
+
+    SEL sel = sel_registerName(selName);
+    Method method = class_getInstanceMethod(cls, sel);
+    if (!method) {
+        NSLog(@"[EliteMod] ❌ Method not found: %s on %s", selName, className);
+        return NO;
+    }
+
+    *original = method_getImplementation(method);
+    method_setImplementation(method, replacement);
+    NSLog(@"[EliteMod] ✅ Hooked -[%s %s]", className, selName);
+    return YES;
+}
+
+// Fallback: scan all classes for a selector
 static void HookSelectorByName(const char *selectorName, IMP replacement, IMP *original) {
     SEL selector = sel_registerName(selectorName);
     int count = objc_getClassList(NULL, 0);
-    if (count <= 0) {
-        NSLog(@"[EliteMod] No classes available to inspect");
-        return;
-    }
+    if (count <= 0) return;
 
     Class *classes = (Class *)calloc((size_t)count, sizeof(Class));
-    if (!classes) {
-        NSLog(@"[EliteMod] Failed to allocate class list");
-        return;
-    }
+    if (!classes) return;
 
     objc_getClassList(classes, count);
 
@@ -100,166 +156,212 @@ static void HookSelectorByName(const char *selectorName, IMP replacement, IMP *o
 
         *original = method_getImplementation(method);
         method_setImplementation(method, replacement);
-        NSLog(@"[EliteMod] Hooked %@ on %@", @(selectorName), NSStringFromClass(cls));
+        NSLog(@"[EliteMod] ✅ Hooked %@ on %@", @(selectorName), NSStringFromClass(cls));
         free(classes);
         return;
     }
 
-    NSLog(@"[EliteMod] Could not find selector %@", @(selectorName));
+    NSLog(@"[EliteMod] ⚠️ Could not find selector %@", @(selectorName));
     free(classes);
 }
 
 // ================================================================
 // 🪝 Hooked implementations
 // ================================================================
+
+// GameplayTutorial::isAimCorrect → originally returns NO (mov w0, #0)
 static BOOL Hooked_isAimCorrect(id self, SEL _cmd) {
-    if (self) {
-        void *visualCue = ReadPointerAtOffset(self, kVisualCueOffset);
-        if (!visualCue) {
-            visualCue = ReadPointerAtOffset(self, kDisasmVisualCueOffset);
-        }
-
-        void *visualGuide = NULL;
-        if (visualCue) {
-            visualGuide = ReadPointerAtOffset(visualCue, kVisualGuideOffset);
-        }
-
-        if (visualGuide) {
-            if (wideGuideLineEnabled) {
-                WriteBoolAtOffset(visualGuide, kWideGuideLineOffset, YES);
-                WriteFloatAtOffset(visualGuide, kLineThicknessOffset, customLineThickness + 2.0f);
-            } else {
-                WriteBoolAtOffset(visualGuide, kWideGuideLineOffset, NO);
-                WriteFloatAtOffset(visualGuide, kLineThicknessOffset, customLineThickness);
-            }
-
-            if (aimLineEnabled || superLineEnabled) {
-                float *lineLength = (float *)((uintptr_t)visualGuide + kAimLineLengthOffset);
-                float *cuePower = (float *)((uintptr_t)self + kCuePowerOffset);
-                if (lineLength && cuePower) {
-                    float power = *cuePower;
-                    if (aimLineEnabled) {
-                        *lineLength = 150.0f + (power * 600.0f);
-                    } else if (superLineEnabled) {
-                        *lineLength = 800.0f + (power * 500.0f);
-                    }
-                }
-            }
-        }
+    if (aimLineEnabled || superLineEnabled) {
+        return YES;
     }
-
     if (orig_isAimCorrect) {
         return ((BOOL (*)(id, SEL))orig_isAimCorrect)(self, _cmd);
-    }
-    return YES;
-}
-
-static BOOL Hooked_antiBan(id self, SEL _cmd) {
-    if (antiBanEnabled) {
-        return YES;
-    }
-
-    if (orig_antiBan) {
-        return ((BOOL (*)(id, SEL))orig_antiBan)(self, _cmd);
-    }
-    return YES;
-}
-
-static BOOL Hooked_autoPlay(id self, SEL _cmd) {
-    if (autoPlayEnabled) {
-        return YES;
-    }
-
-    if (orig_autoPlay) {
-        return ((BOOL (*)(id, SEL))orig_autoPlay)(self, _cmd);
     }
     return NO;
 }
 
-static id Hooked_aimEvent(id self, SEL _cmd) {
-    if (self) {
-        void *visualCue = ReadPointerAtOffset(self, kVisualCueOffset);
-        if (!visualCue) {
-            visualCue = ReadPointerAtOffset(self, kDisasmVisualCueOffset);
-        }
+// GameManager::visualCue → returns object at offset 0x728
+static id Hooked_visualCue(id self, SEL _cmd) {
+    id result = nil;
+    if (orig_visualCue) {
+        result = ((id (*)(id, SEL))orig_visualCue)(self, _cmd);
+    }
 
-        void *visualGuide = NULL;
-        if (visualCue) {
-            visualGuide = ReadPointerAtOffset(visualCue, kVisualGuideOffset);
-        }
-
-        if (visualGuide) {
-            if (angleLockEnabled) {
-                WriteFloatAtOffset(visualGuide, kAimAngleOffset, lockedAngle);
-            }
-
-            if (predictionPathEnabled) {
-                WriteBoolAtOffset(visualGuide, kPredictionPathOffset, YES);
-            }
+    if (result && (aimLineEnabled || superLineEnabled || wideGuideLineEnabled)) {
+        // Apply modifications to the VisualCue object
+        if (wideGuideLineEnabled) {
+            // UserSettingsManager::wideGuideline is at offset 0x13
+            WriteBoolAtOffset((__bridge void *)result, kUserSettings_WideGuideline_Offset, YES);
         }
 
         if (infinitePowerEnabled) {
-            WriteFloatAtOffset(self, kCuePowerOffset, customPower);
+            // VisualCue::maxCuePowerOffset at 0x48
+            WriteFloatAtOffset((__bridge void *)result, kVisualCue_MaxCuePowerOffset, customPower);
         }
     }
 
-    if (angleLockEnabled) {
-        if ([self respondsToSelector:NSSelectorFromString(@"setLockedAngle:")]) {
-            [self performSelector:NSSelectorFromString(@"setLockedAngle:") withObject:@(lockedAngle)];
-        }
-    }
+    return result;
+}
 
-    if (infinitePowerEnabled) {
-        if ([self respondsToSelector:NSSelectorFromString(@"setCuePower:")]) {
-            [self performSelector:NSSelectorFromString(@"setCuePower:") withObject:@(customPower)];
-        }
+// GameManager::hideGuidelinesMode
+static BOOL Hooked_hideGuidelinesMode(id self, SEL _cmd) {
+    if (aimLineEnabled || superLineEnabled) {
+        return NO; // Never hide guidelines when our lines are active
     }
-
-    if (predictionPathEnabled) {
-        if ([self respondsToSelector:NSSelectorFromString(@"setPredictionPath:")]) {
-            [self performSelector:NSSelectorFromString(@"setPredictionPath:") withObject:@(YES)];
-        }
+    if (orig_hideGuidelinesMode) {
+        return ((BOOL (*)(id, SEL))orig_hideGuidelinesMode)(self, _cmd);
     }
+    return NO;
+}
 
-    if (orig_aimEvent) {
-        return ((id (*)(id, SEL))orig_aimEvent)(self, _cmd);
+// AimEvent::getAimEvent: (takes int param)
+static id Hooked_getAimEvent(id self, SEL _cmd, int eventIndex) {
+    if (angleLockEnabled && self) {
+        WriteFloatAtOffset((__bridge void *)self, 0x28, lockedAngle);
+    }
+    if (orig_getAimEvent) {
+        return ((id (*)(id, SEL, int))orig_getAimEvent)(self, _cmd, eventIndex);
     }
     return nil;
 }
 
-static float Hooked_getBallSpeed(id self, SEL _cmd) {
-    if (orig_getBallSpeed) {
-        return ((float (*)(id, SEL))orig_getBallSpeed)(self, _cmd);
+// Table::updateInfoShotPower: (takes MCNumber param)
+static void Hooked_updateInfoShotPower(id self, SEL _cmd, id mcNumber) {
+    if (infinitePowerEnabled && self) {
+        // Override shot power via the friction properties structure
+        void *frictionProps = ReadPointerAtOffset((__bridge void *)self, kTable_FrictionProperties_Offset);
+        if (frictionProps) {
+            WriteFloatAtOffset(frictionProps, 0x0, customPower);
+        }
     }
-    return 0.0f;
+    if (orig_updateInfoShotPower) {
+        ((void (*)(id, SEL, id))orig_updateInfoShotPower)(self, _cmd, mcNumber);
+    }
 }
 
-static float Hooked_getShotPower(id self, SEL _cmd) {
-    if (infinitePowerEnabled) {
-        return customPower;
+// BallPropertiesCue::getBalls → ldr x0, [x0, #0x8]
+static id Hooked_getBalls(id self, SEL _cmd) {
+    if (orig_getBalls) {
+        return ((id (*)(id, SEL))orig_getBalls)(self, _cmd);
     }
-
-    if (orig_getShotPower) {
-        return ((float (*)(id, SEL))orig_getShotPower)(self, _cmd);
+    if (self) {
+        return (__bridge id)ReadPointerAtOffset((__bridge void *)self, kBallProperties_Balls_Offset);
     }
-    return 0.0f;
+    return nil;
 }
 
-static BOOL Hooked_getFriction(id self, SEL _cmd) {
-    if (noFrictionEnabled) {
+// Table::getBallByNumber: (takes unsigned int)
+static id Hooked_getBallByNumber(id self, SEL _cmd, unsigned int number) {
+    if (orig_getBallByNumber) {
+        return ((id (*)(id, SEL, unsigned int))orig_getBallByNumber)(self, _cmd, number);
+    }
+    return nil;
+}
+
+// Table::frictionProperties → returns struct at offset 0x1e8
+static void *Hooked_frictionProperties(id self, SEL _cmd) {
+    void *result = NULL;
+    if (orig_frictionProperties) {
+        result = ((void *(*)(id, SEL))orig_frictionProperties)(self, _cmd);
+    }
+
+    if (noFrictionEnabled && result) {
+        // Zero out friction values in the FrictionProperties struct
+        WriteFloatAtOffset(result, 0x0, 0.0f);
+        WriteFloatAtOffset(result, 0x4, 0.0f);
+        WriteFloatAtOffset(result, 0x8, 0.0f);
+    }
+
+    return result;
+}
+
+// VisualCue::setMaxCuePowerOffset: (takes MCNumber)
+static void Hooked_setMaxCuePowerOffset(id self, SEL _cmd, id mcNumber) {
+    if (infinitePowerEnabled && self) {
+        WriteFloatAtOffset((__bridge void *)self, kVisualCue_MaxCuePowerOffset, customPower);
+    }
+    if (orig_setMaxCuePowerOffset) {
+        ((void (*)(id, SEL, id))orig_setMaxCuePowerOffset)(self, _cmd, mcNumber);
+    }
+}
+
+// UserSettingsManager::wideGuideline → ldrb w0, [x0, #0x13]
+static BOOL Hooked_wideGuideline(id self, SEL _cmd) {
+    if (wideGuideLineEnabled) {
+        return YES;
+    }
+    if (orig_wideGuideline) {
+        return ((BOOL (*)(id, SEL))orig_wideGuideline)(self, _cmd);
+    }
+    return NO;
+}
+
+// UserSettingsManager::setWideGuideline: (takes BOOL)
+static void Hooked_setWideGuideline(id self, SEL _cmd, BOOL value) {
+    if (wideGuideLineEnabled) {
+        value = YES;
+    }
+    if (orig_setWideGuideline) {
+        ((void (*)(id, SEL, BOOL))orig_setWideGuideline)(self, _cmd, value);
+    }
+}
+
+// ================================================================
+// 🛡️ Anti-Ban / Anti-Cheat hooks
+// ================================================================
+
+// PAGDeviceHelper::bu_isJailBroken
+static BOOL Hooked_bu_isJailBroken(id self, SEL _cmd) {
+    if (antiBanEnabled) {
         return NO;
     }
-
-    if (orig_getFriction) {
-        return ((BOOL (*)(id, SEL))orig_getFriction)(self, _cmd);
+    if (orig_bu_isJailBroken) {
+        return ((BOOL (*)(id, SEL))orig_bu_isJailBroken)(self, _cmd);
     }
-    return YES;
+    return NO;
 }
 
-static void Hooked_setTableColor(id self, SEL _cmd, float hue) {
-    if (orig_setTableColor) {
-        ((void (*)(id, SEL, float))orig_setTableColor)(self, _cmd, hue);
+// STKDevice::isJailbroken
+static BOOL Hooked_isJailbroken(id self, SEL _cmd) {
+    if (antiBanEnabled) {
+        return NO;
     }
+    if (orig_isJailbroken) {
+        return ((BOOL (*)(id, SEL))orig_isJailbroken)(self, _cmd);
+    }
+    return NO;
+}
+
+// AFSDKChecksum::calculateV2SanityFlagsWithIsSimulator:isDevBuild:isJailbroken:...
+// Returns a flags object — we return nil/0 to bypass integrity checks
+static id Hooked_calculateV2SanityFlags(id self, SEL _cmd,
+                                         BOOL isSim, BOOL isDev, BOOL isJail,
+                                         BOOL flag4, BOOL flag5) {
+    if (antiBanEnabled) {
+        // Return all-false flags to pass sanity checks
+        return nil;
+    }
+    if (orig_calculateV2SanityFlags) {
+        return ((id (*)(id, SEL, BOOL, BOOL, BOOL, BOOL, BOOL))orig_calculateV2SanityFlags)(
+            self, _cmd, isSim, isDev, isJail, flag4, flag5);
+    }
+    return nil;
+}
+
+// AFSDKChecksum::calculateV2ValueWithTimestamp:uid:systemVersion:firstLaunch:...
+static id Hooked_calculateV2Value(id self, SEL _cmd,
+                                   id timestamp, id uid, id sysVer,
+                                   id firstLaunch, id flag1, id flag2,
+                                   BOOL flag3, BOOL flag4, BOOL flag5, BOOL flag6) {
+    if (antiBanEnabled) {
+        return nil;
+    }
+    if (orig_calculateV2Value) {
+        return ((id (*)(id, SEL, id, id, id, id, id, id, BOOL, BOOL, BOOL, BOOL))
+                orig_calculateV2Value)(self, _cmd, timestamp, uid, sysVer,
+                                       firstLaunch, flag1, flag2, flag3, flag4, flag5, flag6);
+    }
+    return nil;
 }
 
 // ================================================================
@@ -284,7 +386,8 @@ static UIButton *floatingBtn = nil;
         @try {
             if (menuInstance) return;
 
-            UIWindow *window = [[UIApplication sharedApplication] keyWindow] ?: [[UIApplication sharedApplication].windows firstObject];
+            UIWindow *window = [[UIApplication sharedApplication] keyWindow]
+                ?: [[UIApplication sharedApplication].windows firstObject];
             if (!window) {
                 window = [[UIWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
                 [window makeKeyAndVisible];
@@ -326,16 +429,19 @@ static UIButton *floatingBtn = nil;
             ];
 
             CGFloat contentHeight = 0.0f;
-            for (NSInteger i = 0; i < titles.count; ++i) {
+            for (NSInteger i = 0; i < (NSInteger)titles.count; ++i) {
                 UIButton *btn = [UIButton buttonWithType:UIButtonTypeSystem];
                 btn.frame = CGRectMake(15, i * 45, 250, 38);
                 btn.backgroundColor = [UIColor grayColor];
                 btn.layer.cornerRadius = 8.0f;
                 btn.tag = 100 + i;
-                [btn setTitle:[NSString stringWithFormat:@"🔴 %@: OFF", titles[i]] forState:UIControlStateNormal];
+                [btn setTitle:[NSString stringWithFormat:@"🔴 %@: OFF", titles[i]]
+                     forState:UIControlStateNormal];
                 [btn setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
                 btn.titleLabel.font = [UIFont systemFontOfSize:13.0f];
-                [btn addTarget:self action:NSSelectorFromString(selectors[i]) forControlEvents:UIControlEventTouchUpInside];
+                [btn addTarget:self
+                        action:NSSelectorFromString(selectors[i])
+              forControlEvents:UIControlEventTouchUpInside];
                 [scrollView addSubview:btn];
                 contentHeight += 45.0f;
             }
@@ -347,7 +453,8 @@ static UIButton *floatingBtn = nil;
             close.layer.cornerRadius = 10.0f;
             [close setTitle:@"Close" forState:UIControlStateNormal];
             [close setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
-            [close addTarget:self action:@selector(hideMenu) forControlEvents:UIControlEventTouchUpInside];
+            [close addTarget:self action:@selector(hideMenu)
+            forControlEvents:UIControlEventTouchUpInside];
             [mainView addSubview:close];
 
             floatingBtn = [UIButton buttonWithType:UIButtonTypeSystem];
@@ -356,7 +463,8 @@ static UIButton *floatingBtn = nil;
             floatingBtn.layer.cornerRadius = 27.5f;
             [floatingBtn setTitle:@"🎱" forState:UIControlStateNormal];
             [floatingBtn setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
-            [floatingBtn addTarget:self action:@selector(showFromFloating) forControlEvents:UIControlEventTouchUpInside];
+            [floatingBtn addTarget:self action:@selector(showFromFloating)
+                  forControlEvents:UIControlEventTouchUpInside];
             [menuInstance addSubview:floatingBtn];
             floatingBtn.hidden = YES;
         } @catch (NSException *e) {
@@ -369,42 +477,34 @@ static UIButton *floatingBtn = nil;
     aimLineEnabled = !aimLineEnabled;
     [self update:sender title:@"Aim Line" on:aimLineEnabled];
 }
-
 + (void)toggleSuper:(UIButton *)sender {
     superLineEnabled = !superLineEnabled;
     [self update:sender title:@"Super Line" on:superLineEnabled];
 }
-
 + (void)toggleAuto:(UIButton *)sender {
     autoPlayEnabled = !autoPlayEnabled;
     [self update:sender title:@"Auto Play" on:autoPlayEnabled];
 }
-
 + (void)toggleBan:(UIButton *)sender {
     antiBanEnabled = !antiBanEnabled;
     [self update:sender title:@"Anti-Ban" on:antiBanEnabled];
 }
-
 + (void)togglePower:(UIButton *)sender {
     infinitePowerEnabled = !infinitePowerEnabled;
     [self update:sender title:@"Infinite Power" on:infinitePowerEnabled];
 }
-
 + (void)toggleAngle:(UIButton *)sender {
     angleLockEnabled = !angleLockEnabled;
     [self update:sender title:@"Lock Angle" on:angleLockEnabled];
 }
-
 + (void)toggleFriction:(UIButton *)sender {
     noFrictionEnabled = !noFrictionEnabled;
     [self update:sender title:@"No Friction" on:noFrictionEnabled];
 }
-
 + (void)toggleWideGuide:(UIButton *)sender {
     wideGuideLineEnabled = !wideGuideLineEnabled;
     [self update:sender title:@"Wide Guide Line" on:wideGuideLineEnabled];
 }
-
 + (void)togglePrediction:(UIButton *)sender {
     predictionPathEnabled = !predictionPathEnabled;
     [self update:sender title:@"Prediction Path" on:predictionPathEnabled];
@@ -412,7 +512,9 @@ static UIButton *floatingBtn = nil;
 
 + (void)update:(UIButton *)btn title:(NSString *)title on:(BOOL)on {
     btn.backgroundColor = on ? [UIColor greenColor] : [UIColor grayColor];
-    [btn setTitle:[NSString stringWithFormat:@"%@ %@: %@", on ? @"🟢" : @"🔴", title, on ? @"ON" : @"OFF"] forState:UIControlStateNormal];
+    [btn setTitle:[NSString stringWithFormat:@"%@ %@: %@",
+                   on ? @"🟢" : @"🔴", title, on ? @"ON" : @"OFF"]
+         forState:UIControlStateNormal];
 }
 
 + (void)hideMenu {
@@ -435,29 +537,74 @@ static UIButton *floatingBtn = nil;
 #pragma clang diagnostic pop
 
 // ================================================================
-// 🚀 Initialization
+// 🚀 Initialization — hooks with REAL class names & offsets
 // ================================================================
 __attribute__((constructor)) static void initMod(void) {
     @autoreleasepool {
-        [[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationDidFinishLaunchingNotification
-                                                          object:nil
-                                                          queue:[NSOperationQueue mainQueue]
-                                                      usingBlock:^(NSNotification *note) {
-            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 2 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+        [[NSNotificationCenter defaultCenter]
+            addObserverForName:UIApplicationDidFinishLaunchingNotification
+                        object:nil
+                         queue:[NSOperationQueue mainQueue]
+                    usingBlock:^(NSNotification *note) {
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 2 * NSEC_PER_SEC),
+                           dispatch_get_main_queue(), ^{
                 @try {
-                    HookSelectorByName(kTargetMethodNames[0], (IMP)Hooked_isAimCorrect, &orig_isAimCorrect);
-                    HookSelectorByName(kTargetMethodNames[1], (IMP)Hooked_antiBan, &orig_antiBan);
-                    HookSelectorByName(kTargetMethodNames[2], (IMP)Hooked_autoPlay, &orig_autoPlay);
-                    HookSelectorByName(kTargetMethodNames[3], (IMP)Hooked_aimEvent, &orig_aimEvent);
-                    HookSelectorByName(kTargetMethodNames[4], (IMP)Hooked_getBallSpeed, &orig_getBallSpeed);
-                    HookSelectorByName(kTargetMethodNames[5], (IMP)Hooked_getShotPower, &orig_getShotPower);
-                    HookSelectorByName(kTargetMethodNames[6], (IMP)Hooked_getFriction, &orig_getFriction);
-                    HookSelectorByName(kTargetMethodNames[7], (IMP)Hooked_setTableColor, &orig_setTableColor);
+                    NSLog(@"[EliteMod] 🚀 Starting hook installation...");
 
+                    // ── Gameplay hooks (real class + selector pairs) ──
+                    HookClassSelector(kClass_GameplayTutorial, "isAimCorrect",
+                                      (IMP)Hooked_isAimCorrect, &orig_isAimCorrect);
+
+                    HookClassSelector(kClass_GameManager, "visualCue",
+                                      (IMP)Hooked_visualCue, &orig_visualCue);
+
+                    HookClassSelector(kClass_GameManager, "hideGuidelinesMode",
+                                      (IMP)Hooked_hideGuidelinesMode, &orig_hideGuidelinesMode);
+
+                    HookClassSelector(kClass_AimEvent, "getAimEvent:",
+                                      (IMP)Hooked_getAimEvent, &orig_getAimEvent);
+
+                    HookClassSelector(kClass_Table, "updateInfoShotPower:",
+                                      (IMP)Hooked_updateInfoShotPower, &orig_updateInfoShotPower);
+
+                    HookClassSelector(kClass_BallPropertiesCue, "getBalls",
+                                      (IMP)Hooked_getBalls, &orig_getBalls);
+
+                    HookClassSelector(kClass_Table, "getBallByNumber:",
+                                      (IMP)Hooked_getBallByNumber, &orig_getBallByNumber);
+
+                    HookClassSelector(kClass_Table, "frictionProperties",
+                                      (IMP)Hooked_frictionProperties, &orig_frictionProperties);
+
+                    HookClassSelector(kClass_VisualCue, "setMaxCuePowerOffset:",
+                                      (IMP)Hooked_setMaxCuePowerOffset, &orig_setMaxCuePowerOffset);
+
+                    HookClassSelector(kClass_UserSettingsManager, "wideGuideline",
+                                      (IMP)Hooked_wideGuideline, &orig_wideGuideline);
+
+                    HookClassSelector(kClass_UserSettingsManager, "setWideGuideline:",
+                                      (IMP)Hooked_setWideGuideline, &orig_setWideGuideline);
+
+                    // ── Anti-cheat / integrity bypass hooks ──
+                    HookClassSelector(kClass_PAGDeviceHelper, "bu_isJailBroken",
+                                      (IMP)Hooked_bu_isJailBroken, &orig_bu_isJailBroken);
+
+                    HookClassSelector(kClass_STKDevice, "isJailbroken",
+                                      (IMP)Hooked_isJailbroken, &orig_isJailbroken);
+
+                    HookClassSelector(kClass_AFSDKChecksum,
+                        "calculateV2SanityFlagsWithIsSimulator:isDevBuild:isJailbroken:isDebug:isTestFlight:",
+                        (IMP)Hooked_calculateV2SanityFlags, &orig_calculateV2SanityFlags);
+
+                    HookClassSelector(kClass_AFSDKChecksum,
+                        "calculateV2ValueWithTimestamp:uid:systemVersion:firstLaunch:isJailbroken:isSimulator:isDebug:isTestFlight:",
+                        (IMP)Hooked_calculateV2Value, &orig_calculateV2Value);
+
+                    // ── Show menu ──
                     [SimpleMenu showMenu];
-                    NSLog(@"[EliteMod] ✅ Runtime hooks initialized");
+                    NSLog(@"[EliteMod] ✅ All hooks installed successfully");
                 } @catch (NSException *e) {
-                    NSLog(@"[EliteMod] Init error: %@", e);
+                    NSLog(@"[EliteMod] ❌ Init error: %@", e);
                 }
             });
         }];
