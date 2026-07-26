@@ -1,14 +1,20 @@
 ARCHS = arm64
 TARGET = iphone:clang:latest:15.0
+INSTALL_TARGET_PROCESSES = EightBallPool
 
 include $(THEOS)/makefiles/common.mk
 
 TWEAK_NAME = EightBallPoolMod
-EightBallPoolMod_FILES = Tweak.xm
-EightBallPoolMod_FRAMEWORKS = UIKit CoreGraphics
 
-# پێی دەڵێین کە فایلەکانی هێدەر و لایبرەری لەناو هەمان فۆڵدەری پرۆژەکە بخوێنێتەوە
-EightBallPoolMod_CFLAGS = -I./
-EightBallPoolMod_LDFLAGS = -L./ -ldobby
+EightBallPoolMod_FILES = Tweak.xm
+EightBallPoolMod_FRAMEWORKS = UIKit CoreGraphics QuartzCore Foundation
+EightBallPoolMod_PRIVATE_FRAMEWORKS = 
+
+# بۆ ARC
+EightBallPoolMod_CFLAGS = -I./ -fobjc-arc -Wno-deprecated-declarations
+EightBallPoolMod_CCFLAGS = -std=c++17 -fobjc-arc
+
+# بۆ Dobby Hooking
+EightBallPoolMod_LDFLAGS = -L./libs -ldobby -Wl,-rpath,/usr/lib
 
 include $(THEOS_MAKE_PATH)/tweak.mk
