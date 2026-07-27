@@ -17,7 +17,6 @@ static BOOL noFrictionEnabled     = NO;
 static BOOL wideGuideLineEnabled  = NO;
 static BOOL predictionPathEnabled = NO;
 
-static float lockedAngle          = 0.785f;
 static float customPower          = 0.8f;
 
 // ================================================================
@@ -66,20 +65,12 @@ static void WriteFloatAtOffset(void *object, uintptr_t offset, float value) {
     *(float *)((uintptr_t)object + offset) = value;
 }
 
-static float ReadFloatAtOffset(void *object, uintptr_t offset) {
-    if (!object) return 0.0f;
-    return *(float *)((uintptr_t)object + offset);
-}
 
 static void WriteByteAtOffset(void *object, uintptr_t offset, uint8_t value) {
     if (!object) return;
     *(uint8_t *)((uintptr_t)object + offset) = value;
 }
 
-static uint8_t ReadByteAtOffset(void *object, uintptr_t offset) {
-    if (!object) return 0;
-    return *(uint8_t *)((uintptr_t)object + offset);
-}
 
 // ================================================================
 // Hook helpers
