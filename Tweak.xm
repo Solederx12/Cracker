@@ -21,15 +21,6 @@ static float lockedAngle          = 0.785f;
 static float customPower          = 0.8f;
 
 // ================================================================
-// 🧭 Real offsets (fun.ction.txt) — ئێستا لە Offsets.hpp دێن
-// ================================================================
-// GameManager::visualCue            → ldrsw x8,[x8,#0x728]
-// Table::frictionProperties         → ldrsw x8,[x8,#0x1e8]
-// VisualCue::maxCuePowerOffset      → ldrsw x8,[x8,#0x48]
-// UserSettingsManager::wideGuideline→ ldrb  w8,[x0,#0x13]  (1 BYTE!)
-// BallPropertiesCue::getBalls       → ldr   x0,[x0,#0x8]
-
-// ================================================================
 // 🎯 Class names
 // ================================================================
 static const char *kClass_GameManager            = "GameManager";
@@ -80,7 +71,6 @@ static float ReadFloatAtOffset(void *object, uintptr_t offset) {
     return *(float *)((uintptr_t)object + offset);
 }
 
-// ⚠️ گرنگ: wideGuideline بە ldrb (1 byte) دەخوێنرێتەوە، نەک 4 bytes
 static void WriteByteAtOffset(void *object, uintptr_t offset, uint8_t value) {
     if (!object) return;
     *(uint8_t *)((uintptr_t)object + offset) = value;
@@ -92,7 +82,7 @@ static uint8_t ReadByteAtOffset(void *object, uintptr_t offset) {
 }
 
 // ================================================================
-// Hook helper
+// Hook helpers
 // ================================================================
 static BOOL HookClassSelector(const char *className, const char *selName,
                               IMP replacement, IMP *original) {
@@ -105,7 +95,6 @@ static BOOL HookClassSelector(const char *className, const char *selName,
     SEL sel = sel_registerName(selName);
     Method method = class_getInstanceMethod(cls, sel);
     if (!method) {
-        // هەوڵبدە class method
         method = class_getClassMethod(cls, sel);
     }
     if (!method) {
@@ -118,6 +107,33 @@ static BOOL HookClassSelector(const char *className, const char *selName,
     }
     method_setImplementation(method, replacement);
     NSLog(@"[EliteMod] ✅ Hooked -[%s %s]", className, selName);
+    return YES;
+}
+
+// ✅ چاککراو #5: بۆ class methods (anti-ban)
+static BOOL HookClassSelectorClass(const char *className, const char *selName,
+                                   IMP replacement, IMP *original) {
+    Class cls = objc_getClass(className);
+    if (!cls) {
+        NSLog(@"[EliteMod] ❌ Class not found: %s", className);
+        return NO;
+    }
+    SEL sel = sel_registerName(selName);
+
+    // سەرەتا class method تاقی بکەوە
+    Method method = class_getClassMethod(cls, sel);
+    if (!method) {
+        method = class_getInstanceMethod(cls, sel);
+    }
+    if (!method) {
+        NSLog(@"[EliteMod] ⚠️ Method not found: +[%s %s]", className, selName);
+        return NO;
+    }
+    if (original) {
+        *original = method_getImplementation(method);
+    }
+    method_setImplementation(method, replacement);
+    NSLog(@"[EliteMod] ✅ Hooked +[%s %s]", className, selName);
     return YES;
 }
 
@@ -143,7 +159,6 @@ static id Hooked_visualCue(id self, SEL _cmd) {
         result = ((id (*)(id, SEL))orig_visualCue)(self, _cmd);
     }
 
-    // تەنها maxCuePowerOffset لەسەر VisualCue (offset 0x48) — ئەمە ڕاستە
     if (result && infinitePowerEnabled) {
         WriteFloatAtOffset((__bridge void *)result,
                            GameOffsets::VisualCue_MaxCuePowerOffset, customPower);
@@ -162,30 +177,30 @@ static BOOL Hooked_hideGuidelinesMode(id self, SEL _cmd) {
     return NO;
 }
 
-// AimEvent::getAimEvent: (int)
+// ================================================================
+// 🔧 چاککراو #6: getAimEvent — offset لاببە (مەترسیدارە)
+// ================================================================
 static id Hooked_getAimEvent(id self, SEL _cmd, int eventIndex) {
-    if (angleLockEnabled && self) {
-        // تێبینی: offsetـی angle پێویستی بە پشتڕاستکردنەوە هەیە
-        WriteFloatAtOffset((__bridge void *)self, 0x28, lockedAngle);
-    }
+    // تەنها orig بانگ بکە — offset پشتڕاست نەکراوەتەوە
     if (orig_getAimEvent) {
         return ((id (*)(id, SEL, int))orig_getAimEvent)(self, _cmd, eventIndex);
     }
     return nil;
 }
 
-// Table::updateInfoShotPower: (MCNumber)
+// ================================================================
+// 🔧 چاککراو #3: updateInfoShotPower — orig بەتاڵە (ret)
+// ================================================================
 static void Hooked_updateInfoShotPower(id self, SEL _cmd, id mcNumber) {
+    // orig بەتاڵە (ret)، بۆیە تەنها خۆمان بنووسین
     if (infinitePowerEnabled && self) {
-        void *frictionProps = ReadPointerAtOffset((__bridge void *)self,
-                                                  GameOffsets::Table_FrictionProperties);
+        void *frictionProps = ReadPointerAtOffset(
+            (__bridge void *)self, GameOffsets::Table_FrictionProperties);
         if (frictionProps) {
             WriteFloatAtOffset(frictionProps, 0x0, customPower);
         }
     }
-    if (orig_updateInfoShotPower) {
-        ((void (*)(id, SEL, id))orig_updateInfoShotPower)(self, _cmd, mcNumber);
-    }
+    // orig بانگ مەکە — بەتاڵە
 }
 
 // BallPropertiesCue::getBalls → ldr x0,[x0,#0x8]
@@ -208,28 +223,35 @@ static id Hooked_getBallByNumber(id self, SEL _cmd, unsigned int number) {
     return nil;
 }
 
-// Table::frictionProperties → struct at offset 0x1e8
+// ================================================================
+// 🔧 چاککراو #7: frictionProperties — هەر جارێک بنووسە
+// ================================================================
 static void *Hooked_frictionProperties(id self, SEL _cmd) {
     void *result = NULL;
     if (orig_frictionProperties) {
         result = ((void *(*)(id, SEL))orig_frictionProperties)(self, _cmd);
     }
+    // هەر جارێک بانگ بکرێت، بنووسە (چونکە embedded structـە)
     if (noFrictionEnabled && result) {
-        WriteFloatAtOffset(result, 0x0, 0.0f);
-        WriteFloatAtOffset(result, 0x4, 0.0f);
-        WriteFloatAtOffset(result, 0x8, 0.0f);
+        WriteFloatAtOffset(result, 0x0, 0.0f);  // friction x
+        WriteFloatAtOffset(result, 0x4, 0.0f);  // friction y
+        WriteFloatAtOffset(result, 0x8, 0.0f);  // friction z
     }
     return result;
 }
 
-// VisualCue::setMaxCuePowerOffset: (MCNumber)
+// ================================================================
+// 🔧 چاککراو #2: setMaxCuePowerOffset — پاش orig بنووسە
+// ================================================================
 static void Hooked_setMaxCuePowerOffset(id self, SEL _cmd, id mcNumber) {
+    // سەرەتا orig بانگ بکە (خۆی str d0 دەکات)
+    if (orig_setMaxCuePowerOffset) {
+        ((void (*)(id, SEL, id))orig_setMaxCuePowerOffset)(self, _cmd, mcNumber);
+    }
+    // پاشان بنووسە (دووبارە overwrite)
     if (infinitePowerEnabled && self) {
         WriteFloatAtOffset((__bridge void *)self,
                            GameOffsets::VisualCue_MaxCuePowerOffset, customPower);
-    }
-    if (orig_setMaxCuePowerOffset) {
-        ((void (*)(id, SEL, id))orig_setMaxCuePowerOffset)(self, _cmd, mcNumber);
     }
 }
 
@@ -244,18 +266,18 @@ static BOOL Hooked_wideGuideline(id self, SEL _cmd) {
     return NO;
 }
 
-// UserSettingsManager::setWideGuideline: (BOOL)
+// ================================================================
+// 🔧 چاککراو #4: setWideGuideline — پاش orig بنووسە
+// ================================================================
 static void Hooked_setWideGuideline(id self, SEL _cmd, BOOL value) {
-    if (wideGuideLineEnabled) {
-        value = YES;
-        // بە 1 byte بینووسە چونکە ldrbـە
-        if (self) {
-            WriteByteAtOffset((__bridge void *)self,
-                              GameOffsets::UserSettings_WideGuideline, 1);
-        }
-    }
+    // سەرەتا orig (خۆی strb دەکات + notification)
     if (orig_setWideGuideline) {
         ((void (*)(id, SEL, BOOL))orig_setWideGuideline)(self, _cmd, value);
+    }
+    // پاشان overwrite بکە
+    if (wideGuideLineEnabled && self) {
+        WriteByteAtOffset((__bridge void *)self,
+                          GameOffsets::UserSettings_WideGuideline, 1);
     }
 }
 
@@ -280,13 +302,10 @@ static BOOL Hooked_isJailbroken(id self, SEL _cmd) {
 }
 
 // AFSDKChecksum::calculateV2SanityFlagsWithIsSimulator:isDevBuild:isJailbroken:isDebug:isTestFlight:
-// 5 BOOL params: isSim, isDev, isJail, isDebug, isTestFlight
-// ⚠️ return nil مەکرە! بانگکردنی orig بە isJailbroken=NO سەلامەتترە
 static id Hooked_calculateV2SanityFlags(id self, SEL _cmd,
                                         BOOL isSim, BOOL isDev, BOOL isJail,
                                         BOOL isDebug, BOOL isTestFlight) {
     if (antiBanEnabled) {
-        // هەموو flagـە مەترسیدارەکان بکوژێنەوە
         isSim      = NO;
         isDev      = NO;
         isJail     = NO;
@@ -300,26 +319,28 @@ static id Hooked_calculateV2SanityFlags(id self, SEL _cmd,
     return nil;
 }
 
-// AFSDKChecksum::calculateV2ValueWithTimestamp:uid:systemVersion:firstLaunch:...
-// ⚠️ disassembly: 5 id + 5 BOOL (param_8 + 4 stack)
+// ================================================================
+// ✅ چاککراو #1: calculateV2Value (10 params: 5 id + 5 BOOL)
+// ================================================================
 static id Hooked_calculateV2Value(id self, SEL _cmd,
                                   id timestamp, id uid, id sysVer,
                                   id firstLaunch, id extra,
                                   BOOL f1, BOOL f2, BOOL f3, BOOL f4, BOOL f5) {
     if (antiBanEnabled) {
-        // flagـەکان پاکبکەوە
         f1 = NO; f2 = NO; f3 = NO; f4 = NO; f5 = NO;
     }
     if (orig_calculateV2Value) {
-        return ((id (*)(id, SEL, id, id, id, id, id, BOOL, BOOL, BOOL, BOOL, BOOL))
+        return ((id (*)(id, SEL, id, id, id, id, id,
+                        BOOL, BOOL, BOOL, BOOL, BOOL))
                 orig_calculateV2Value)(self, _cmd, timestamp, uid, sysVer,
-                                       firstLaunch, extra, f1, f2, f3, f4, f5);
+                                       firstLaunch, extra,
+                                       f1, f2, f3, f4, f5);
     }
     return nil;
 }
 
 // ================================================================
-// 🖥️ Menu UI — UIView overlay (نەک UIWindow وەک subview)
+// 🖥️ Menu UI
 // ================================================================
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
@@ -330,7 +351,6 @@ static id Hooked_calculateV2Value(id self, SEL _cmd,
 @implementation EliteOverlayView
 - (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event {
     UIView *v = [super hitTest:point withEvent:event];
-    // ئەگەر تەنها overlayـەکە خۆی بوو، ڕایمەگە بۆ یارییەکە
     return (v == self) ? nil : v;
 }
 @end
@@ -510,7 +530,6 @@ static UIButton         *floatingBtn = nil;
 // ================================================================
 __attribute__((constructor)) static void initMod(void) {
     @autoreleasepool {
-        // offsets دابنێ (لە Offsets.hpp)
         GameOffsets::SetOffsets(
             0x728,  // GameManager visualCue
             0x1E8,  // Table frictionProperties
@@ -563,21 +582,19 @@ __attribute__((constructor)) static void initMod(void) {
                     HookClassSelector(kClass_UserSettingsManager, "setWideGuideline:",
                                       (IMP)Hooked_setWideGuideline, &orig_setWideGuideline);
 
-                    // ── Anti-cheat / integrity bypass ──
-                    HookClassSelector(kClass_PAGDeviceHelper, "bu_isJailBroken",
-                                      (IMP)Hooked_bu_isJailBroken, &orig_bu_isJailBroken);
+                    // ── Anti-cheat / integrity bypass (class methods) ──
+                    HookClassSelectorClass(kClass_PAGDeviceHelper, "bu_isJailBroken",
+                                           (IMP)Hooked_bu_isJailBroken, &orig_bu_isJailBroken);
 
-                    HookClassSelector(kClass_STKDevice, "isJailbroken",
-                                      (IMP)Hooked_isJailbroken, &orig_isJailbroken);
+                    HookClassSelectorClass(kClass_STKDevice, "isJailbroken",
+                                           (IMP)Hooked_isJailbroken, &orig_isJailbroken);
 
                     HookClassSelector(kClass_AFSDKChecksum,
                         "calculateV2SanityFlagsWithIsSimulator:isDevBuild:isJailbroken:isDebug:isTestFlight:",
                         (IMP)Hooked_calculateV2SanityFlags, &orig_calculateV2SanityFlags);
 
-                    // ⚠️ تێبینی: ناوی selectorـی خوارەوە ڕەنگە پێویستی بە ڕێکخستن بێت
-                    // ئەگەر hook سەرکەوتوو نەبوو، هیچ crashـێک ڕوونادات (skip دەکرێت)
                     HookClassSelector(kClass_AFSDKChecksum,
-                        "calculateV2ValueWithTimestamp:uid:systemVersion:firstLaunch:isJailbroken:isSimulator:isDebug:isTestFlight:",
+                        "calculateV2ValueWithTimestamp:uid:systemVersion:firstLaunch:extra:flag1:flag2:flag3:flag4:flag5:",
                         (IMP)Hooked_calculateV2Value, &orig_calculateV2Value);
 
                     // ── Show menu ──
