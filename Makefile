@@ -21,6 +21,10 @@ EightBallPoolMod_CCFLAGS = -std=c++17 -fobjc-arc -Wno-deprecated-declarations
 # objc خۆکار link دەبێت؛ substrate لە tweak.mk خۆکارە
 EightBallPoolMod_LDFLAGS = -lobjc
 
+EightBallPoolMod_CFLAGS = -fobjc-arc -std=c++17
+
+EightBallPoolMod_CCFLAGS = -std=c++17
+
 include $(THEOS_MAKE_PATH)/tweak.mk
 
 # ================================================================
