@@ -22,7 +22,7 @@ EightBallPoolMod_CFLAGS = -fobjc-arc -Wno-unused-function
 EightBallPoolMod_LDFLAGS = -lobjc
 
 EightBallPoolMod_CFLAGS = -fobjc-arc -std=c++17
-
+EightBallPoolMod_CFLAGS += -Wno-unused-variable -Wno-unused-function
 EightBallPoolMod_CCFLAGS = -std=c++17
 
 include $(THEOS_MAKE_PATH)/tweak.mk
