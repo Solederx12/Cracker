@@ -17,7 +17,7 @@ EightBallPoolMod_FRAMEWORKS = UIKit CoreGraphics QuartzCore Foundation
 # ARC + Warnings
 EightBallPoolMod_CFLAGS = -fobjc-arc -Wno-deprecated-declarations -Wno-unused-variable
 EightBallPoolMod_CCFLAGS = -std=c++17 -fobjc-arc -Wno-deprecated-declarations
-
+EightBallPoolMod_CFLAGS = -fobjc-arc -Wno-unused-function
 # objc خۆکار link دەبێت؛ substrate لە tweak.mk خۆکارە
 EightBallPoolMod_LDFLAGS = -lobjc
 
