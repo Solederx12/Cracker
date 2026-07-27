@@ -10,15 +10,15 @@ include $(THEOS)/makefiles/common.mk
 
 TWEAK_NAME = EightBallPoolMod
 
+# تەنها Tweak.xm — main.mm لابرانی چونکە duplicate constructor بوو
 EightBallPoolMod_FILES = Tweak.xm
 EightBallPoolMod_FRAMEWORKS = UIKit CoreGraphics QuartzCore Foundation
-EightBallPoolMod_PRIVATE_FRAMEWORKS =
 
 # ARC + Warnings
 EightBallPoolMod_CFLAGS = -fobjc-arc -Wno-deprecated-declarations -Wno-unused-variable
 EightBallPoolMod_CCFLAGS = -std=c++17 -fobjc-arc -Wno-deprecated-declarations
 
-# Substrate / Substrate-like hooking
+# objc خۆکار link دەبێت؛ substrate لە tweak.mk خۆکارە
 EightBallPoolMod_LDFLAGS = -lobjc
 
 include $(THEOS_MAKE_PATH)/tweak.mk
