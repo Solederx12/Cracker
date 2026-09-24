@@ -1856,3 +1856,4 @@ bool Prediction::PredictionInfo::isMovingOrSpinning()
 {
     return ((this->velocity.isNull() && this->spin.isNull()) == false);
 }
+
