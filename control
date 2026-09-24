@@ -1,9 +1,0 @@
-Package: com.kurdish.80pmenu
-Name: 80p Kurdish Menu
-Depends: mobilesubstrate
-Version: 1.0.0
-Architecture: iphoneos-arm64
-Description: Mod Menu for 8 Ball Pool with custom guidelines and features.
-Maintainer: KurdishDeveloper
-Author: KurdishDeveloper
-Section: Tweaks
